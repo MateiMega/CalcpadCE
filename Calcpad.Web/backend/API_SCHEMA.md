@@ -268,7 +268,8 @@ interface PdfOptions {
   // Header and footer content. An empty/omitted value simply leaves that slot blank.
   headerFooterLines?: string; // Separator lines drawn: "both" | "header" | "footer" | "none" (default: "both")
   lineColor?: string;        // Separator line color, "#rrggbb" (default: "#b3b3b3")
-  documentTitle?: string;    // Header, left, bold
+  documentTitle?: string;    // Header, left, bold (the client sends the file's Info title)
+  showTitle?: boolean;       // Whether documentTitle is drawn (default: true)
   showPageNumbers?: boolean; // "Page n of m", footer right (default: true)
   showDate?: boolean;        // Timestamp, header right (default: true)
   dateTimeFormat?: string;   // .NET format string for the timestamp (empty uses "g")
@@ -558,10 +559,12 @@ interface LintDiagnostic {
 | CPD-3413 | Semantic | Invalid #settings JSON |
 | CPD-3414 | Semantic | Invalid PDF settings in a metadata comment |
 | CPD-3415 | Semantic | Invalid #UI format |
-| CPD-3416 | Semantic | 'uiOverrides' metadata comment not on the first line |
+| CPD-3416 | Semantic | 'uiOverrides' metadata comment not at the top of the file |
 | CPD-3417 | Semantic | Duplicate 'uiOverrides' metadata comment |
 | CPD-3418 | Semantic | 'uiOverrides' sharing a comment with another key |
 | CPD-3419 | Semantic | Deprecated stored input value |
+| CPD-3420 | Semantic | Deprecated #input keyword |
+| CPD-3421 | Semantic | 'fileInfo' metadata comment not on the first line |
 | **Stage 3: Format (CPD-36xx)** |||
 | CPD-3601 | Format | Invalid format specifier |
 

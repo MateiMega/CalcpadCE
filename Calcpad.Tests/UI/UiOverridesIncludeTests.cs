@@ -26,6 +26,19 @@ public class UiOverridesIncludeTests
     }
 
     [Fact]
+    public void CalcpadService_StripsAFileInfoCommentFromAnInclude()
+    {
+        using var temp = new TempDir();
+        temp.Write("sub/mod.cpd", "'<!--{\"fileInfo\":{\"title\":\"Module\"}}-->\nx = 1\n");
+
+        var (html, _, errors, _) = new CalcpadService().Convert(
+            "#include sub/mod.cpd\n", sourceFilePath: temp.At("main.cpd"), forceUnwrappedCode: true);
+
+        Assert.Empty(errors);
+        Assert.DoesNotContain("fileInfo", html);
+    }
+
+    [Fact]
     public void CalcpadService_KeepsAUiOverridesCommentDeclaredInTheMainFile()
     {
         // The strip only applies to content an #include brings in - the including document's

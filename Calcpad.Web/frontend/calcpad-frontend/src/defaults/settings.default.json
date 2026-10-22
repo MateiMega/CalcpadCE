@@ -55,6 +55,8 @@
         "writeMode": "reportOnly",
         "dotnetPath": "dotnet",
         "editorFontFamily": "JuliaMono",
+        "userName": "",
+        "showFileInfoLine": false,
         "pdfSettings": {
             "format": "Letter",
             "orientation": "portrait",
@@ -64,7 +66,7 @@
             "marginRight": "0.5in",
             "showPageNumbers": true,
             "showDate": true,
-            "documentTitle": "",
+            "showTitle": true,
             "dateTimeFormat": "M/d/yyyy h:mm tt",
             "headerFooterLines": "both",
             "lineColor": "#b3b3b3"

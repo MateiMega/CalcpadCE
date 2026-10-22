@@ -662,7 +662,8 @@ export class TauriMessageBridge extends BaseMessageBridge {
         await this.syncRecentFilesMenu([]);
     }
 
-    async saveFileAs(content: string): Promise<string | null> {
+    /** `content` may be a function of the chosen path, for content that depends on the file name. */
+    async saveFileAs(content: string | ((filePath: string) => string)): Promise<string | null> {
         const filePath = await dialogSave({
             title: 'Save File',
             defaultPath: this.getSaveDialogDefaultPath(),
@@ -675,7 +676,7 @@ export class TauriMessageBridge extends BaseMessageBridge {
         if (!filePath) return null;
         this.rememberDialogDir(filePath);
         await this.allowDocumentDir(filePath);
-        await this.saveFile(filePath, content);
+        await this.saveFile(filePath, typeof content === 'function' ? content(filePath) : content);
         return filePath;
     }
 

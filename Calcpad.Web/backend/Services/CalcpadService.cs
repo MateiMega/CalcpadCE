@@ -507,7 +507,8 @@ tan_angle = tan(angle°)";
         /// the host restores it by scanning the document you have open, before #include is
         /// expanded, so one coming from an included file would otherwise sit inert in the
         /// flattened text. Stripped the same way #local content is, whether or not the
-        /// including file wrapped it in #local/#global itself.
+        /// including file wrapped it in #local/#global itself. A 'fileInfo' comment goes too,
+        /// so an included file's details can't become a bundled worksheet's first line.
         /// </para>
         /// </summary>
         private static string ProcessIncludedContent(string content)
@@ -516,16 +517,16 @@ tan_angle = tan(angle°)";
                 return content;
 
             var isLocal = false;
-            var isUiOverridesComment = false;
+            var isHostComment = false;
             var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
             var outputLines = new List<string>();
 
             foreach (var line in lines)
             {
-                if (isUiOverridesComment)
+                if (isHostComment)
                 {
                     if (line.Contains("-->", StringComparison.Ordinal))
-                        isUiOverridesComment = false;
+                        isHostComment = false;
 
                     continue;
                 }
@@ -537,9 +538,9 @@ tan_angle = tan(angle°)";
                 {
                     isLocal = false;
                 }
-                else if (IsUiOverridesCommentStart(line))
+                else if (IsHostCommentStart(line))
                 {
-                    isUiOverridesComment = !line.Contains("-->", StringComparison.Ordinal);
+                    isHostComment = !line.Contains("-->", StringComparison.Ordinal);
                 }
                 else
                 {
@@ -556,16 +557,17 @@ tan_angle = tan(angle°)";
 
         /// <summary>
         /// True for the first line of a metadata comment ('<!--{...}-->) whose JSON carries
-        /// a 'uiOverrides' key. A cheap substring check rather than a JSON parse, matching
-        /// the rest of this method's line-based approach - good enough since the host always
-        /// writes the key verbatim.
+        /// a 'uiOverrides' or 'fileInfo' key. A cheap substring check rather than a JSON parse,
+        /// matching the rest of this method's line-based approach - good enough since the host
+        /// always writes the keys verbatim.
         /// </summary>
-        private static bool IsUiOverridesCommentStart(string line)
+        private static bool IsHostCommentStart(string line)
         {
             var trimmed = line.TrimStart();
             return (trimmed.StartsWith('\'') || trimmed.StartsWith('"'))
                 && trimmed.Contains("<!--", StringComparison.Ordinal)
-                && trimmed.Contains("uiOverrides", StringComparison.Ordinal);
+                && (trimmed.Contains("\"uiOverrides\"", StringComparison.Ordinal)
+                    || trimmed.Contains("\"fileInfo\"", StringComparison.Ordinal));
         }
     }
 }

@@ -687,7 +687,7 @@ namespace Calcpad.Server.Services
                 gfx.DrawLine(ctx.LinePen, margin, lineY, width - margin, lineY);
 
             // Document title (top-left, bold)
-            if (!string.IsNullOrEmpty(options.DocumentTitle))
+            if ((options.ShowTitle ?? PdfSettingsDefaults.ShowTitle) && !string.IsNullOrEmpty(options.DocumentTitle))
             {
                 gfx.DrawString(options.DocumentTitle, boldFont, darkBrush,
                     new XPoint(margin, headerY + 12));

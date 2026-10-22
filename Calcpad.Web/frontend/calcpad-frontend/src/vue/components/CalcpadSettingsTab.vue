@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-tab">
+  <div ref="rootEl" class="settings-tab">
     <div class="settings-toolbar">
       <input
         v-model="searchQuery"
@@ -255,6 +255,28 @@
             <button @click="resetPdfSettings" class="reset-button">
               Reset PDF Settings
             </button>
+          </div>
+        </div>
+      </section>
+
+      <section v-show="sectionVisible('user')" class="settings-section">
+        <h3 class="section-header" @click="toggle('user')">
+          <span class="expand-icon" :class="{ collapsed: isCollapsed('user') }">&#x25BC;</span>
+          User
+        </h3>
+        <div v-show="bodyVisible('user')" class="section-body">
+          <div v-show="rowVisible('user', 'userName')" class="setting-group">
+            <label for="userName">
+              User Name:
+              <span class="setting-info" title="Recorded in a file's info (Info tab) as its author, who last updated it, and who reviewed it.">ⓘ</span>
+            </label>
+            <input
+              id="userName"
+              v-model="userName"
+              type="text"
+              placeholder="e.g. jsmith"
+              @change="updateUserName"
+            />
           </div>
         </div>
       </section>
@@ -631,7 +653,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, reactive } from 'vue'
+import { ref, watch, computed, reactive, nextTick } from 'vue'
 import type { WritableComputedRef } from 'vue'
 import type { PdfSettings, Settings, ThemeInfo, VersionConfig } from '../types'
 import { DEFAULT_PDF_SETTINGS, DEFAULT_VERSION_CONFIG } from '../types'
@@ -668,6 +690,9 @@ interface Props {
   initialAvailableConfigs?: string[]
   initialEditorFontFamily?: string
   initialAvailableFonts?: string[]
+  initialUserName?: string
+  /** A setting to bring into view and focus, by its section and input id. */
+  focusRequest?: { section: string; id: string } | null
   appVersion?: string
   pdfSettings?: PdfSettings
 }
@@ -695,6 +720,8 @@ const props = withDefaults(defineProps<Props>(), {
   initialAvailableConfigs: () => ['default'],
   initialEditorFontFamily: 'JuliaMono',
   initialAvailableFonts: () => [],
+  initialUserName: '',
+  focusRequest: null,
   appVersion: '',
   pdfSettings: () => ({ ...DEFAULT_PDF_SETTINGS })
 })
@@ -725,6 +752,8 @@ const emit = defineEmits<{
   openFontsFolder: []
   refreshFonts: []
   updateEditorFontFamily: [family: string]
+  updateUserName: [value: string]
+  focusHandled: []
   updatePdfSettings: [settings: PdfSettings]
   resetPdfSettings: []
 }>()
@@ -810,6 +839,7 @@ const activeConfig = ref(props.initialActiveConfig)
 const availableConfigs = ref<string[]>(props.initialAvailableConfigs)
 const editorFontFamily = ref(props.initialEditorFontFamily)
 const availableFonts = ref<string[]>(props.initialAvailableFonts)
+const userName = ref(props.initialUserName)
 const newConfigName = ref('')
 const saveError = ref('')
 
@@ -867,11 +897,17 @@ const SECTION_META: Record<string, { title: string; rows: Record<string, string>
       marginRight: 'pdf right margin page',
       showPageNumbers: 'pdf page numbers footer',
       showDate: 'pdf date timestamp header',
-      documentTitle: 'pdf document title header',
+      showTitle: 'pdf document title header show hide',
       dateTimeFormat: 'pdf timestamp date time format',
       headerFooterLines: 'pdf header footer separator lines none both',
       lineColor: 'pdf line color separator header footer',
       reset: 'reset pdf settings default'
+    }
+  },
+  user: {
+    title: 'User',
+    rows: {
+      userName: 'user name username author reviewer file info'
     }
   },
   editor: {
@@ -1115,6 +1151,11 @@ const updateEditorFontFamily = () => {
   emit('updateEditorFontFamily', editorFontFamily.value)
 }
 
+const updateUserName = () => {
+  userName.value = userName.value.trim()
+  emit('updateUserName', userName.value)
+}
+
 // Watch for prop changes
 watch(
   () => props.settings,
@@ -1257,6 +1298,30 @@ watch(
   (newValue) => {
     editorFontFamily.value = newValue
   }
+)
+
+watch(
+  () => props.initialUserName,
+  (newValue) => {
+    userName.value = newValue
+  }
+)
+
+// A search or a collapsed section would otherwise leave the requested field hidden.
+const rootEl = ref<HTMLElement | null>(null)
+watch(
+  () => props.focusRequest,
+  async (request) => {
+    if (!request) return
+    searchQuery.value = ''
+    collapsed[request.section] = false
+    await nextTick()
+    const input = rootEl.value?.querySelector<HTMLElement>(`#${request.id}`)
+    input?.scrollIntoView({ block: 'center' })
+    input?.focus()
+    emit('focusHandled')
+  },
+  { immediate: true }
 )
 
 watch(
