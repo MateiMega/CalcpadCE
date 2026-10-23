@@ -60,12 +60,14 @@
         class="insert-item"
         :title="buildTooltip(item)"
       >
-        <div class="item-display">{{ formatDisplayText(item) }}</div>
+        <div class="item-display">
+          <CalcpadSearchHighlight :text="formatDisplayText(item)" :query="searchTerm" />
+        </div>
         <div v-if="formatSecondaryText(item)" class="item-description">
-          {{ formatSecondaryText(item) }}
+          <CalcpadSearchHighlight :text="formatSecondaryText(item)" :query="searchTerm" />
         </div>
         <div v-if="item.categoryPath" class="item-category">
-          {{ item.categoryPath }}
+          <CalcpadSearchHighlight :text="item.categoryPath" :query="searchTerm" />
         </div>
       </div>
     </div>
@@ -83,6 +85,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import CalcpadSearchField from './CalcpadSearchField.vue'
+import CalcpadSearchHighlight from './CalcpadSearchHighlight.vue'
 import CollapseAllButton from './CollapseAllButton.vue'
 import type { InsertItem } from '../types'
 import { replaceParameterPlaceholders } from '../../text/snippet-insert'
