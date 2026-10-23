@@ -207,6 +207,7 @@ namespace Calcpad.Core
             }
         }
 
+        /// <summary>Invariant culture, so a written file reads back the same on any locale.</summary>
         internal string[][] GetMatrix(string name, char type)
         {
             if (!_variables.TryGetValue(name, out var variable))
@@ -240,30 +241,25 @@ namespace Calcpad.Core
                         var cmResult = new string[1][];
                         cmResult[0] = new string[rows];
                         for (int i = rows - 1; i >= 0; --i)
-                            cmResult[0][i] = matrix[i, 0].ToString();
+                            cmResult[0][i] = matrix[i, 0].ToString(CultureInfo.InvariantCulture);
                         return cmResult;
                     case DiagonalMatrix:
                     case HpDiagonalMatrix:
                         var dmResult = new string[1][];
                         dmResult[0] = new string[rows];
                         for (int i = rows - 1; i >= 0; --i)
-                            dmResult[0][i] = matrix[i, i].ToString();
+                            dmResult[0][i] = matrix[i, i].ToString(CultureInfo.InvariantCulture);
                         return dmResult;
+                    // Rows are written in full, trailing zeros too: a dropped zero would shrink
+                    // the matrix read back, or leave a stale cell behind in an appended range.
                     case LowerTriangularMatrix:
                     case HpLowerTriangularMatrix:
                         var ltmResult = new string[rows][];
                         for (int i = rows - 1; i >= 0; --i)
                         {
-                            var size = 0;
+                            ltmResult[i] = new string[i + 1];
                             for (int j = i; j >= 0; --j)
-                                if (!Equals(matrix[i, j], RealValue.Zero))
-                                {
-                                    size = j;
-                                    break;
-                                }
-                            ltmResult[i] = new string[size + 1];
-                            for (int j = size; j >= 0; --j)
-                                ltmResult[i][j] = matrix[i, j].ToString();
+                                ltmResult[i][j] = matrix[i, j].ToString(CultureInfo.InvariantCulture);
                         }
                         return ltmResult;
                     case UpperTriangularMatrix:
@@ -273,16 +269,9 @@ namespace Calcpad.Core
                         var utmResult = new string[rows][];
                         for (int i = rows - 1; i >= 0; --i)
                         {
-                            var size = i;
+                            utmResult[i] = new string[cols - i];
                             for (int j = cols - 1; j >= i; --j)
-                                if (!Equals(matrix[i, j], RealValue.Zero))
-                                {
-                                    size = j;
-                                    break;
-                                }
-                            utmResult[i] = new string[size - i + 1];
-                            for (int j = size; j >= i; --j)
-                                utmResult[i][j - i] = matrix[i, j].ToString();
+                                utmResult[i][j - i] = matrix[i, j].ToString(CultureInfo.InvariantCulture);
                         }
                         return utmResult;
                 }
@@ -291,16 +280,9 @@ namespace Calcpad.Core
             var result = new string[rows][];
             for (int i = rows - 1; i >= 0; --i)
             {
-                var size = 0;
+                result[i] = new string[cols];
                 for (int j = cols - 1; j >= 0; --j)
-                    if (!Equals(matrix[i, j], RealValue.Zero))
-                    {
-                        size = j;
-                        break;
-                    }
-                result[i] = new string[size + 1];
-                for (int j = size; j >= 0; --j)
-                    result[i][j] = matrix[i, j].ToString();
+                    result[i][j] = matrix[i, j].ToString(CultureInfo.InvariantCulture);
             }
             return result;
         }
@@ -436,9 +418,10 @@ namespace Calcpad.Core
             }
             var d = 1d;
             var numberSpan = s[..n];
+            // No thousands separators, or "1,5" would read as 15 before the decimal comma is tried.
             if (n > 0 &&
-                !double.TryParse(numberSpan, CultureInfo.InvariantCulture.NumberFormat, out d) &&
-                !double.TryParse(numberSpan, numFormat, out d))
+                !double.TryParse(numberSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out d) &&
+                !double.TryParse(numberSpan, NumberStyles.Float, numFormat, out d))
                 throw Exceptions.InvalidNumber(numberSpan.ToString());
 
             Unit u = null;

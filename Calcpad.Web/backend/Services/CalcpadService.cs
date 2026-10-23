@@ -457,10 +457,8 @@ tan_angle = tan(angle°)";
             var templateWithTheme = _htmlTemplate.Replace("<body>", $"<body{themeClass}>");
 
             // Register @font-face rules for fonts referenced by name in the
-            // template CSS (e.g. Jost*), so they don't depend on OS installation,
-            // and expose window.__calcpadFonts for any other client-side use.
-            // Injected before </head> so it runs before any module scripts in body.
-            var headMarkup = BundledFonts.GetFontFaceStyleTag() + BundledFonts.GetInjectionScript();
+            // template CSS (e.g. Jost*), so they don't depend on OS installation.
+            var headMarkup = BundledFonts.GetFontFaceStyleTag();
 
             // The datagrid libraries are large, so they only go in when a grid is
             // actually present. jspreadsheet has to be defined before the event

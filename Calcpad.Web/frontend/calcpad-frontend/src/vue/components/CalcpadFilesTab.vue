@@ -6,18 +6,18 @@
     </div>
     <template v-else>
       <div class="files-header">
-        <button class="files-icon-btn files-close-btn" @click="$emit('close-folder')" title="Close Folder">
+        <button class="icon files-close-btn" @click="$emit('close-folder')" title="Close Folder">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.647 3.646.708.708L8 8.707z"/></svg>
         </button>
         <span class="files-folder-name" :title="openedFolder">{{ folderBasename }}</span>
         <div class="files-header-actions">
-          <button class="files-icon-btn" @click="onRefresh" title="Refresh">
+          <button class="icon" @click="onRefresh" title="Refresh">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13.65 2.35A7 7 0 1 0 15 8h-1.5a5.5 5.5 0 1 1-1.6-4.9L9.5 5.5H15V0l-1.35 2.35z"/></svg>
           </button>
-          <button class="files-icon-btn" @click="collapseAll" title="Collapse All">
+          <button class="icon" @click="collapseAll" title="Collapse All">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 9h11v1H4z"/></svg>
           </button>
-          <button class="files-change-btn" @click="$emit('open-folder-request')" title="Open a different folder">
+          <button class="secondary files-change-btn" @click="$emit('open-folder-request')" title="Open a different folder">
             Change Folder
           </button>
         </div>
@@ -308,43 +308,13 @@ const onCopyRelativePath = async () => {
   flex-shrink: 0;
 }
 
-.files-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  background: transparent;
-  color: var(--vscode-icon-foreground, var(--vscode-foreground));
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  opacity: 0.85;
-}
-
-.files-icon-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
-  opacity: 1;
-}
-
 .files-close-btn {
   margin-right: 2px;
   flex-shrink: 0;
 }
 
 .files-change-btn {
-  background: transparent;
-  color: var(--vscode-textLink-foreground);
-  border: none;
-  cursor: pointer;
-  font-size: var(--calcpad-font-size-sm);
-  padding: 2px 6px;
   text-transform: none;
-}
-
-.files-change-btn:hover {
-  text-decoration: underline;
 }
 
 .files-show-all {
@@ -378,5 +348,4 @@ const onCopyRelativePath = async () => {
   overflow-x: hidden;
   padding: 4px 0;
 }
-
 </style>

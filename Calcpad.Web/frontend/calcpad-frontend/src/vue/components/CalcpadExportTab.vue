@@ -10,18 +10,17 @@
           <div v-for="group in visibleExportGroups" :key="group.variant" class="export-group">
             <h4 class="export-group-title" :title="group.detail">{{ group.label }}</h4>
             <div class="header-actions">
-              <button class="btn" @click="$emit('savePdf', group.variant)" :title="`Save this document's ${group.label.toLowerCase()} as a PDF`">
+              <button @click="$emit('savePdf', group.variant)" :title="`Save this document's ${group.label.toLowerCase()} as a PDF`">
                 Save PDF…
               </button>
               <button
                 v-if="group.word"
-                class="btn"
                 @click="$emit('saveDocx', group.variant)"
                 :title="`Save this document's ${group.label.toLowerCase()} as a Word .docx file`"
               >
                 Save Word…
               </button>
-              <button class="btn" @click="$emit('saveHtml', group.variant)" :title="`Save this document's ${group.label.toLowerCase()} as standalone HTML`">
+              <button @click="$emit('saveHtml', group.variant)" :title="`Save this document's ${group.label.toLowerCase()} as standalone HTML`">
                 Save HTML…
               </button>
             </div>
@@ -46,7 +45,6 @@
           </div>
           <div class="header-actions">
             <button
-              class="btn"
               @click="$emit('writeFilesNow')"
               title="Run this document now and write its #write/#append files to disk"
             >
@@ -65,7 +63,6 @@
         <div v-show="!isCollapsed('plots')" class="section-body">
           <div class="header-actions">
             <button
-              class="btn"
               :disabled="loading"
               @click="$emit('refreshPlots')"
               title="Re-run the current document and list its plots"
@@ -73,7 +70,6 @@
               {{ loading ? 'Loading…' : 'Refresh' }}
             </button>
             <button
-              class="btn"
               :disabled="loading || plots.length === 0"
               @click="$emit('savePlotsZip')"
               title="Download every plot as a single ZIP archive"
@@ -94,7 +90,6 @@
                 <div class="plot-size">{{ formatSize(p.sizeBytes) }}</div>
               </div>
               <button
-                class="btn"
                 @click="$emit('savePlot', p.index)"
                 title="Download this plot as an image file"
               >
@@ -115,7 +110,6 @@
             <h4 class="export-group-title" :title="COMPILED_DETAIL">Compiled worksheet</h4>
             <div class="header-actions">
               <button
-                class="btn"
                 @click="$emit('saveCompiled')"
                 title="Save this document as a compiled .cpdz worksheet"
               >
@@ -130,7 +124,6 @@
             <h4 class="export-group-title" :title="PORTABLE_DETAIL">Portable package</h4>
             <div class="header-actions">
               <button
-                class="btn"
                 @click="$emit('savePortable')"
                 title="Save this document and everything it references as a ZIP that runs anywhere"
               >
@@ -424,22 +417,9 @@ function formatSize(bytes: number): string {
   opacity: 0.7;
 }
 
-.btn {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
+button:where(:not(.secondary, .tertiary, .icon)) {
   padding: 4px 10px;
   border-radius: 2px;
-  font-size: var(--calcpad-font-size-sm);
-  cursor: pointer;
 }
 
-.btn:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
 </style>

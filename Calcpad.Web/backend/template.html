@@ -883,6 +883,64 @@
             color: #C991F2;
         }
 
+        .dark-theme .dvl,
+        .dark-theme .matrix .td,
+        .dark-theme .matrix .tr:first-child .td,
+        .dark-theme .matrix .tr:last-child .td {
+            border-color: #d4d4d4;
+        }
+
+        /* Root SVGs stroke black; invert(0.83) maps it to #d4d4d4. */
+        .dark-theme .r0, .dark-theme .r1,
+        .dark-theme .r2, .dark-theme .r3 {
+            filter: invert(0.83);
+        }
+
+        .dark-theme table.bordered th {
+            background-color: #2d2d30;
+            border-color: #5a5a5a;
+        }
+
+        .dark-theme table.bordered td {
+            border-color: #3e3e42;
+        }
+
+        .dark-theme .indent {
+            border-left-color: #3e3e42;
+        }
+
+        .dark-theme .fold > :first-child:hover,
+        .dark-theme .unfold > :first-child:hover {
+            color: #4fc1ff;
+        }
+
+        .dark-theme .value:after {
+            background: #d4d4d4;
+            color: #1e1e1e;
+        }
+
+        .dark-theme .plot text {
+            fill: #d4d4d4;
+        }
+
+        .dark-theme .plot .Grid {
+            stroke: rgba(255, 255, 255, 0.08);
+        }
+
+        .dark-theme .plot .Frame {
+            stroke: rgba(255, 255, 255, 0.24);
+        }
+
+        .dark-theme .plot .Axis {
+            stroke: #d4d4d4;
+        }
+
+        /* Raster plots have black axes and text baked in on a transparent background. */
+        .dark-theme img.plot {
+            background-color: #fff;
+            border-radius: 3pt;
+        }
+
         .dark-theme .cond {
             color: #c586c0; /* Light magenta for conditions */
         }

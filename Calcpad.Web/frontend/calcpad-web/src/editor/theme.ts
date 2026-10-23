@@ -11,6 +11,7 @@ export const calcpadDarkTheme: monaco.editor.IStandaloneThemeData = {
     ...({ semanticHighlighting: true } as object),
     rules: [
         { token: 'comment', foreground: '57A64A' },
+        { token: 'comment.heading', fontStyle: 'bold' },
         { token: 'keyword', foreground: 'FF80FF' },
         { token: 'operator', foreground: 'ECC860' },
         { token: 'bracket', foreground: 'FF69B4' },
@@ -75,6 +76,7 @@ export const calcpadLightTheme: monaco.editor.IStandaloneThemeData = {
     ...({ semanticHighlighting: true } as object),
     rules: [
         { token: 'comment', foreground: '008000' },
+        { token: 'comment.heading', fontStyle: 'bold' },
         { token: 'keyword', foreground: 'AF00DB' },
         { token: 'operator', foreground: '8A6A00' },
         { token: 'bracket', foreground: 'D6006E' },

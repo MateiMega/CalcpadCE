@@ -1,7 +1,11 @@
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
+}
+
+/* Preserve Monaco's native box sizing. */
+:where([class*="monaco"], [class*="monaco"] *) {
+    box-sizing: revert;
 }
 
 html, body, #app {
@@ -173,6 +177,12 @@ select option {
     flex: 1;
     min-width: 0;
     min-height: 0;
+}
+
+.monaco-editor .find-widget {
+    margin-top: 4px;
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 8px;
 }
 
 /* Floats over the code rather than sitting in the status bar, where it was too easy
@@ -394,25 +404,19 @@ select option {
     text-overflow: ellipsis;
 }
 
-.tab-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+button.tab-close {
     width: 18px;
     height: 18px;
-    padding: 0;
     margin-left: 2px;
-    background: transparent;
     color: inherit;
-    border: none;
     border-radius: 3px;
-    cursor: pointer;
     font-size: var(--calcpad-font-size-sm);
     line-height: 1;
 }
 
-.tab-close:hover {
+button.tab-close:hover {
     background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+    color: inherit;
 }
 
 .tab-dirty-dot {
@@ -428,20 +432,12 @@ select option {
     pointer-events: none;
 }
 
-.tab-new {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    flex-shrink: 0;
-    background: transparent;
-    color: var(--vscode-tab-inactiveForeground, #969696);
-    border: none;
-    cursor: pointer;
+button.tab-new {
+    font-family: revert;
     font-size: var(--calcpad-font-size-xl);
 }
 
-.tab-new:hover {
+button.tab-new:hover {
     background: var(--vscode-tab-hoverBackground, #2a2d2e);
     color: var(--vscode-tab-hoverForeground, #ffffff);
 }
@@ -454,19 +450,13 @@ select option {
     border-left: 1px solid var(--vscode-widget-border, #454545);
 }
 
-.tab-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    padding: 0;
-    background: transparent;
-    color: var(--vscode-tab-inactiveForeground, #969696);
-    border: none;
-    cursor: pointer;
+.tab-actions button,
+.results-sidebar-toggle {
+    height: auto;
 }
 
-.tab-action svg {
+.tab-actions svg,
+.results-sidebar-toggle svg {
     width: 14px;
     height: 14px;
 }
@@ -476,19 +466,17 @@ select option {
     align-self: stretch;
 }
 
-.tab-action:hover {
+.tab-actions button:hover,
+.results-sidebar-toggle:hover {
     background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
     color: var(--vscode-tab-hoverForeground, #ffffff);
 }
 
 /* Icon-only, so the ring is the only focus cue. */
-.tab-action:focus-visible {
+.tab-actions button:focus-visible,
+.results-sidebar-toggle:focus-visible {
     outline: 1px solid var(--vscode-focusBorder, #007acc);
     outline-offset: -2px;
-}
-
-.tab-action.active {
-    color: var(--vscode-tab-activeForeground, #ffffff);
 }
 
 .tab-context-menu {
@@ -871,26 +859,13 @@ select option {
     justify-content: flex-end;
     gap: 8px;
 }
-.modal-btn {
-    background: var(--vscode-button-secondaryBackground, #3a3d41);
-    color: var(--vscode-button-secondaryForeground, #cccccc);
+button.modal-btn {
     border: none;
     padding: 4px 12px;
     border-radius: 2px;
     cursor: pointer;
     font-size: var(--calcpad-font-size-md);
 }
-.modal-btn:hover {
-    background: var(--vscode-button-secondaryHoverBackground, #45494e);
-}
-.modal-btn.primary {
-    background: var(--vscode-button-background, #0e639c);
-    color: var(--vscode-button-foreground, #ffffff);
-}
-.modal-btn.primary:hover {
-    background: var(--vscode-button-hoverBackground, #1177bb);
-}
-
 .quick-pick-list {
     display: flex;
     flex-direction: column;

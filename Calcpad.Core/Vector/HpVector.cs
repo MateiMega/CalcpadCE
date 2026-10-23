@@ -111,7 +111,7 @@ namespace Calcpad.Core
                 if (_length <= 10)
                     _capacity = _length;
                 else if (index == 0 && _capacity < _length / 100)
-                    _capacity = _length / 100;
+                    _capacity = Math.Min(_length / 100, InitialCapacityLimit);
 
                 _values = new double[_capacity];
             }

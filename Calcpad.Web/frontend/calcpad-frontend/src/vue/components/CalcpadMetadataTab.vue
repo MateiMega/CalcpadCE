@@ -41,18 +41,18 @@
                 <option v-for="t in macroTypes" :key="t" :value="t">{{ t }}</option>
               </optgroup>
             </select>
-            <button class="icon-button" title="Remove" @click="model.paramTypes.splice(i, 1)">✕</button>
+            <button class="icon" title="Remove" @click="model.paramTypes.splice(i, 1)">✕</button>
           </div>
-          <button class="add-button" @click="model.paramTypes.push('')">+ Add type</button>
+          <button class="tertiary" @click="model.paramTypes.push('')">+ Add type</button>
         </div>
 
         <div v-if="showParams" class="field">
           <label>Parameter descriptions</label>
           <div v-for="(_, i) in model.paramDesc" :key="'pd' + i" class="list-row">
             <input type="text" v-model="model.paramDesc[i]" placeholder="Description" />
-            <button class="icon-button" title="Remove" @click="model.paramDesc.splice(i, 1)">✕</button>
+            <button class="icon" title="Remove" @click="model.paramDesc.splice(i, 1)">✕</button>
           </div>
-          <button class="add-button" @click="model.paramDesc.push('')">+ Add description</button>
+          <button class="tertiary" @click="model.paramDesc.push('')">+ Add description</button>
         </div>
 
         <div v-if="showReturnType" class="field">
@@ -88,11 +88,11 @@
                 v-model="row.value"
               />
               <span v-if="row.key" class="setting-info" :title="setting.detail(row.key)">ⓘ</span>
-              <button class="icon-button" title="Remove" @click="model.settings.splice(i, 1)">✕</button>
+              <button class="icon" title="Remove" @click="model.settings.splice(i, 1)">✕</button>
             </div>
             <div v-if="setting.error(row)" class="setting-error">{{ setting.error(row) }}</div>
           </div>
-          <button class="add-button" @click="model.settings.push({ key: '', value: '' })">+ Add setting</button>
+          <button class="tertiary" @click="model.settings.push({ key: '', value: '' })">+ Add setting</button>
         </div>
 
         <div v-if="showPdf" class="field">
@@ -124,11 +124,11 @@
                 v-model="row.value"
               />
               <span v-if="row.key" class="setting-info" :title="pdf.detail(row.key)">ⓘ</span>
-              <button class="icon-button" title="Remove" @click="model.pdf.splice(i, 1)">✕</button>
+              <button class="icon" title="Remove" @click="model.pdf.splice(i, 1)">✕</button>
             </div>
             <div v-if="pdf.error(row)" class="setting-error">{{ pdf.error(row) }}</div>
           </div>
-          <button class="add-button" @click="model.pdf.push({ key: '', value: '' })">+ Add PDF setting</button>
+          <button class="tertiary" @click="model.pdf.push({ key: '', value: '' })">+ Add PDF setting</button>
         </div>
 
         <div v-if="showUi" class="field">
@@ -187,16 +187,16 @@
             <label>Column headers</label>
             <div v-for="(_, i) in model.ui.columnHeaders" :key="'ch' + i" class="list-row">
               <input type="text" v-model="model.ui.columnHeaders[i]" />
-              <button class="icon-button" title="Remove" @click="model.ui.columnHeaders.splice(i, 1)">✕</button>
+              <button class="icon" title="Remove" @click="model.ui.columnHeaders.splice(i, 1)">✕</button>
             </div>
-            <button class="add-button" @click="model.ui.columnHeaders.push('')">+ Add column header</button>
+            <button class="tertiary" @click="model.ui.columnHeaders.push('')">+ Add column header</button>
 
             <label>Row headers</label>
             <div v-for="(_, i) in model.ui.rowHeaders" :key="'rh' + i" class="list-row">
               <input type="text" v-model="model.ui.rowHeaders[i]" />
-              <button class="icon-button" title="Remove" @click="model.ui.rowHeaders.splice(i, 1)">✕</button>
+              <button class="icon" title="Remove" @click="model.ui.rowHeaders.splice(i, 1)">✕</button>
             </div>
-            <button class="add-button" @click="model.ui.rowHeaders.push('')">+ Add row header</button>
+            <button class="tertiary" @click="model.ui.rowHeaders.push('')">+ Add row header</button>
 
             <div class="sub-row">
               <span class="sub-label" title="Pixels, or a percentage of the line such as 75%. Natural width when empty.">Grid width</span>
@@ -210,9 +210,9 @@
             <label>Column widths</label>
             <div v-for="(_, i) in model.ui.columnWidths" :key="'cw' + i" class="list-row">
               <input type="number" min="1" v-model.number="model.ui.columnWidths[i]" />
-              <button class="icon-button" title="Remove" @click="model.ui.columnWidths.splice(i, 1)">✕</button>
+              <button class="icon" title="Remove" @click="model.ui.columnWidths.splice(i, 1)">✕</button>
             </div>
-            <button class="add-button" @click="model.ui.columnWidths.push('')">+ Add column width</button>
+            <button class="tertiary" @click="model.ui.columnWidths.push('')">+ Add column width</button>
           </template>
 
           <template v-if="model.ui.type === 'dropdown' || model.ui.type === 'radio'">
@@ -220,9 +220,9 @@
             <div v-for="(_, i) in model.ui.keys" :key="'kv' + i" class="list-row">
               <input type="text" placeholder="Key" v-model="model.ui.keys[i]" />
               <input type="text" placeholder="Value" v-model="model.ui.values[i]" />
-              <button class="icon-button" title="Remove" @click="removeUiOption(i)">✕</button>
+              <button class="icon" title="Remove" @click="removeUiOption(i)">✕</button>
             </div>
-            <button class="add-button" @click="model.ui.keys.push(''); model.ui.values.push('')">+ Add option</button>
+            <button class="tertiary" @click="model.ui.keys.push(''); model.ui.values.push('')">+ Add option</button>
             <div v-if="uiKeysValuesError" class="setting-error">{{ uiKeysValuesError }}</div>
           </template>
         </div>
@@ -250,12 +250,12 @@
             >{{ row.key }}</button>
             <input type="text" v-model="model.uiOverrides[i].value" />
             <span v-if="uiControlsResolved && !row.used" class="unused-badge">unused</span>
-            <button class="icon-button" title="Remove" @click="model.uiOverrides.splice(i, 1)">✕</button>
+            <button class="icon" title="Remove" @click="model.uiOverrides.splice(i, 1)">✕</button>
           </div>
 
           <div class="sub-row">
             <button
-              class="add-button"
+              class="tertiary"
               :disabled="!unusedOverrides.length"
               :title="uiControlsResolved ? undefined : 'Waiting for the document to be rendered'"
               @click="purgeUnused"
@@ -323,8 +323,8 @@
         </div>
 
         <div class="actions">
-          <button class="primary-button" :disabled="hasErrors" :title="hasErrors ? 'Fix the highlighted fields before applying' : undefined" @click="onApply">Apply</button>
-          <button class="secondary-button" @click="clearDraft">Reset</button>
+          <button :disabled="hasErrors" :title="hasErrors ? 'Fix the highlighted fields before applying' : undefined" @click="onApply">Apply</button>
+          <button class="secondary" @click="clearDraft">Reset</button>
         </div>
       </template>
     </div>
@@ -1101,41 +1101,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   resize: vertical;
 }
 
-.icon-button {
-  background: transparent;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  padding: 2px 4px;
-  font-size: var(--calcpad-font-size-sm);
-  border-radius: 2px;
-  flex: 0 0 auto;
-}
-
-.icon-button:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  color: var(--vscode-foreground);
-}
-
-.add-button {
-  background: transparent;
-  border: 1px dashed var(--vscode-input-border, var(--vscode-widget-border));
-  color: var(--vscode-foreground);
-  cursor: pointer;
-  padding: 3px 8px;
-  font-size: var(--calcpad-font-size-sm);
-  border-radius: 2px;
-}
-
-.add-button:hover:not(:disabled) {
-  background: var(--vscode-toolbar-hoverBackground);
-}
-
-.add-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .key-button {
   flex: 0 0 auto;
   max-width: 45%;
@@ -1190,40 +1155,5 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   display: flex;
   gap: 8px;
   margin-top: 8px;
-}
-
-.primary-button {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  padding: 6px 14px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.primary-button:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground);
-}
-
-.primary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.secondary-button {
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  border: none;
-  padding: 6px 14px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.secondary-button:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
 }
 </style>

@@ -111,5 +111,17 @@ export function createCalcpadEditor(
             nonBasicASCII: false,
         },
     });
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateReducedMotion = (): void => {
+        container.classList.toggle('reduce-motion', reducedMotion.matches);
+        container.classList.toggle('enable-motion', !reducedMotion.matches);
+    };
+    container.classList.add('monaco-workbench');
+    updateReducedMotion();
+    reducedMotion.addEventListener('change', updateReducedMotion);
+    editor.onDidDispose(() => {
+        reducedMotion.removeEventListener('change', updateReducedMotion);
+        container.classList.remove('monaco-workbench', 'reduce-motion', 'enable-motion');
+    });
     return editor;
 }

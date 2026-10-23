@@ -1762,7 +1762,7 @@ namespace Calcpad.Core {
         }
 
         // / <summary>
-        // /   Looks up a localized string similar to #UI &apos;{0}&apos; does not apply to a {1}, which always replaces the whole value..
+        // /   Looks up a localized string similar to #UI &apos;{0}&apos; does not apply to a {1}, which substitutes its own values..
         // / </summary>
         public static string The_UI_0_does_not_apply_to_1 {
             get {

@@ -11,7 +11,7 @@
         <button
           v-for="view in views"
           :key="view.id"
-          :class="['activity-icon', { active: activeView === view.id }]"
+          :class="['icon', 'activity-icon', { active: activeView === view.id }]"
           :title="view.label"
           :aria-label="view.label"
           :aria-selected="activeView === view.id"
@@ -23,7 +23,7 @@
       <!-- Sits on the bar that spans both views, since hiding takes both away. Showing
            it again is the editor-area button's job — this bar goes with the sidebar. -->
       <button
-        class="activity-icon activity-hide"
+        class="icon activity-icon activity-hide"
         title="Hide the sidebar (Ctrl+Shift+B)"
         aria-label="Hide the sidebar"
         @click="hideSidebar()"
@@ -59,17 +59,17 @@
            the sidebar's minimum width (the second button is web-only). -->
       <div class="pane-actions">
         <button
-          class="pane-action"
+          class="icon"
           :title="isSplit ? 'Close this panel' : 'Split panel'"
           :aria-label="isSplit ? 'Close this panel' : 'Split panel'"
           @click="isSplit ? closePane(paneIndex) : splitPane()"
           v-html="isSplit ? CLOSE_ICON : SPLIT_ICON"
         ></button>
-        <!-- Hides the whole sidebar, unlike .pane-action beside it, which splits or
+        <!-- Hides the whole sidebar, unlike the button beside it, which splits or
              closes one of its inner panes. -->
         <button
           v-if="versionConfig.isWeb && paneIndex === 0"
-          class="pane-action"
+          class="icon"
           title="Hide the sidebar (Ctrl+Shift+B)"
           aria-label="Hide the sidebar"
           @click="hideSidebar()"
@@ -280,7 +280,7 @@ const fileTreeRoots = ref<FileNode[]>([])
 
 // Split icon (two stacked rows) and close icon for the per-pane action button;
 // hide-sidebar collapses the panel itself.
-const SPLIT_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="2" y1="8" x2="14" y2="8"/></svg>'
+const SPLIT_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><line x1="2.5" y1="8" x2="13.5" y2="8"/></svg>'
 const CLOSE_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" xmlns="http://www.w3.org/2000/svg"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>'
 
 // The side panel can be split into two panes, each with its own active tab.
@@ -1020,35 +1020,28 @@ onUnmounted(() => {
 }
 
 .activity-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 32px;
   height: 32px;
-  padding: 0;
-  border: none;
-  background: transparent;
   color: var(--vscode-activityBar-inactiveForeground, var(--vscode-foreground));
-  cursor: pointer;
   border-radius: 3px;
   position: relative;
   opacity: 0.75;
   transition: background 0.15s ease, opacity 0.15s ease, color 0.15s ease;
 }
 
-.activity-icon:hover {
-  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+.activity-icon:hover,
+.activity-icon.active {
   opacity: 1;
 }
 
-.activity-icon.active {
+.icon.activity-icon:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+  color: var(--vscode-activityBar-inactiveForeground, var(--vscode-foreground));
+}
+
+.icon.activity-icon.active {
   color: var(--vscode-activityBar-foreground, var(--vscode-foreground));
   background: var(--vscode-list-activeSelectionBackground, var(--vscode-toolbar-activeBackground, rgba(90, 93, 94, 0.5)));
-  opacity: 1;
-}
-
-.activity-icon :deep(svg) {
-  display: block;
 }
 
 .calcpad-view.split .calcpad-pane + .calcpad-pane {
@@ -1105,27 +1098,8 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.pane-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--vscode-tab-inactiveForeground);
-  cursor: pointer;
-  border-radius: 0;
-  transition: all 0.2s ease;
-}
-
-.pane-action:hover {
-  background: var(--vscode-tab-hoverBackground);
-  color: var(--vscode-tab-activeForeground);
-}
-
-.pane-action :deep(svg) {
-  display: block;
+.pane-actions button {
+  height: auto;
 }
 
 .tab-content {

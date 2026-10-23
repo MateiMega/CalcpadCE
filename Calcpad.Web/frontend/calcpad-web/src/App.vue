@@ -54,7 +54,7 @@
                   <span class="tab-title">{{ tab.title }}</span>
                   <span v-if="tab.dirty" class="tab-dirty-dot" :title="'Unsaved changes'">●</span>
                   <button
-                    class="tab-close"
+                    class="icon tab-close"
                     :title="tab.dirty ? 'Close (unsaved changes)' : 'Close'"
                     @mousedown.stop
                     @click.stop="onTabClose(group.id, tab.id)"
@@ -62,12 +62,12 @@
                     ✕
                   </button>
                 </div>
-                <button class="tab-new" title="New tab (Ctrl+T)" @click="onNewTab(group.id)">+</button>
+                <button class="icon tab-new" title="New tab (Ctrl+T)" @click="onNewTab(group.id)">+</button>
               </div>
               <!-- First group only; the strip is inside the v-for over groups. -->
               <div v-if="gi === 0 && !uiModeFullscreen" class="tab-actions">
                 <button
-                  class="tab-action"
+                  class="icon"
                   @click="onRunPreview"
                   title="Run preview (Ctrl+Alt+X)"
                   aria-label="Run preview"
@@ -75,7 +75,7 @@
                   <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>
                 </button>
                 <button
-                  class="tab-action"
+                  class="icon"
                   :class="{ active: isSplit }"
                   @click="onToggleSplit"
                   :title="isSplit ? 'Merge editor groups' : 'Split editor down (Ctrl+\\)'"
@@ -86,7 +86,7 @@
                 </button>
                 <button
                   v-if="!previewVisible"
-                  class="tab-action results-sidebar-toggle"
+                  class="icon results-sidebar-toggle"
                   @click="togglePreview"
                   title="Show the results pane (Ctrl+P)"
                   aria-label="Show the results pane"
@@ -366,7 +366,7 @@
           >Exit input mode</button>
           <button
             v-else
-            class="tab-action results-sidebar-toggle"
+            class="icon results-sidebar-toggle"
             @click="togglePreview"
             title="Hide the results pane (Ctrl+P)"
             aria-label="Hide the results pane"
@@ -505,9 +505,9 @@
         <div class="modal-title">{{ confirmState.title }}</div>
         <div class="modal-message">{{ confirmState.message }}</div>
         <div class="modal-actions">
-          <button class="modal-btn primary" @click="resolveConfirm('yes')">{{ confirmState.yesLabel }}</button>
-          <button class="modal-btn" @click="resolveConfirm('no')">{{ confirmState.noLabel }}</button>
-          <button class="modal-btn" @click="resolveConfirm('cancel')">Cancel</button>
+          <button class="modal-btn" @click="resolveConfirm('yes')">{{ confirmState.yesLabel }}</button>
+          <button class="modal-btn secondary" @click="resolveConfirm('no')">{{ confirmState.noLabel }}</button>
+          <button class="modal-btn secondary" @click="resolveConfirm('cancel')">Cancel</button>
         </div>
       </div>
     </div>
@@ -525,10 +525,10 @@
         </template>
         <div class="modal-url">{{ openLinkState.url }}</div>
         <div class="modal-actions">
-          <button class="modal-btn primary" @click="resolveOpenLink(true)">
+          <button class="modal-btn" @click="resolveOpenLink(true)">
             {{ openLinkState.mode === 'file' ? 'Open File' : 'Open in Browser' }}
           </button>
-          <button class="modal-btn" @click="resolveOpenLink(false)">Cancel</button>
+          <button class="modal-btn secondary" @click="resolveOpenLink(false)">Cancel</button>
         </div>
       </div>
     </div>
@@ -550,7 +550,7 @@
           </button>
         </div>
         <div class="modal-actions">
-          <button class="modal-btn" @click="resolveQuickPick(null)">Cancel</button>
+          <button class="modal-btn secondary" @click="resolveQuickPick(null)">Cancel</button>
         </div>
       </div>
     </div>

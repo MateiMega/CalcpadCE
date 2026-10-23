@@ -38,7 +38,7 @@
       </div>
 
       <div class="actions">
-        <button class="primary-button" @click="onPrettify">
+        <button @click="onPrettify">
           Prettify Document
         </button>
       </div>
@@ -165,18 +165,4 @@ function onPrettify() {
   margin-top: 8px;
 }
 
-.primary-button {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  padding: 6px 14px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.primary-button:hover {
-  background: var(--vscode-button-hoverBackground);
-}
 </style>

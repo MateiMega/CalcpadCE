@@ -149,6 +149,12 @@
         "description": "JSON payload of #settings and #UI"
       }
     ],
+    "semanticTokenModifiers": [
+      {
+        "id": "heading",
+        "description": "Comment on a line starting with \", rendered as a heading"
+      }
+    ],
     "semanticTokenScopes": [
       {
         "scopes": {
@@ -803,6 +809,9 @@
         "enabled": true,
         "rules": {
           "comment:calcpad": "#57A64A",
+          "comment.heading:calcpad": {
+            "bold": true
+          },
           "keyword:calcpad": "#FF80FF",
           "operator:calcpad": "#ECC860",
           "bracket:calcpad": "#FF69B4",
@@ -844,6 +853,9 @@
           "enabled": true,
           "rules": {
             "comment:calcpad": "#008000",
+            "comment.heading:calcpad": {
+              "bold": true
+            },
             "keyword:calcpad": "#AF00DB",
             "operator:calcpad": "#8A6A00",
             "bracket:calcpad": "#D6006E",

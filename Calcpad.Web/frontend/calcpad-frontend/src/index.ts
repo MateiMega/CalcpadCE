@@ -117,6 +117,8 @@ export {
     SEMANTIC_TOKEN_TYPES,
     TOKEN_TYPE_MAP,
     mapTokenTypeToIndex,
+    SEMANTIC_TOKEN_MODIFIERS,
+    getTokenModifiers,
 } from './services/highlight';
 
 // --- Base64 Truncation -------------------------------------------------------
