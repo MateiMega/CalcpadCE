@@ -225,7 +225,7 @@ namespace Calcpad.Highlighter.Linter.Validators.Stage3
 
             if (info.ValueKind != JsonValueKind.Object)
             {
-                reporter.Warn("'fileInfo' must be an object, e.g. {\"title\": \"Beam Design\"}");
+                reporter.Warn("'fileInfo' must be a JSON object");
                 return true;
             }
 

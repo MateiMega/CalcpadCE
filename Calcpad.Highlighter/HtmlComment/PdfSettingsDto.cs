@@ -85,7 +85,6 @@ namespace Calcpad.Highlighter.HtmlComment
         public bool? ShowPageNumbers { get; set; }
         public bool? ShowDate { get; set; }
         public bool? ShowTitle { get; set; }
-        /// <summary>Sent by the host from the file's Info title; not a key a document can set.</summary>
         public string DocumentTitle { get; set; }
         public string DateTimeFormat { get; set; }
         public string HeaderFooterLines { get; set; }
