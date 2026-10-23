@@ -65,8 +65,9 @@ clean diff means nothing new needs a human.
 Needs `docker`, plus the `dotnet` SDK, `npm` and `cargo` on the host — the
 harvest resolves each closure with the real package managers.
 
-**Use the SDK `global.json` pins**, not merely a compatible one. The patch level decides which packages resolve standalone and which collapse into the shared framework: on 10.0.111 the server's closure carries `Microsoft.Extensions.{DependencyInjection,Logging,Options,Primitives}`
-as separate packages, and on 10.0.112 it does not, because the newer runtime pack subsumes them. It also fixes the runtime pack versions the notices record. Harvest with the wrong SDK and the file describes a build nobody ships.
+**Use the SDK `global.json` pins**, not merely a compatible one. It fixes the runtime pack versions the notices record. Harvest with the wrong SDK and the file describes a build nobody ships.
+
+**The SDK needs the ASP.NET Core targeting pack** (`packs/Microsoft.AspNetCore.App.Ref`). Restore reads its pruning data from there; without it, the server's closure gains `Microsoft.Extensions.{DependencyInjection,Logging,Options,Primitives}` 10.0.0, which never ship because the runtime pack's copies win. Microsoft's installer includes it; on Arch, install `aspnet-targeting-pack` alongside `dotnet-sdk`.
 
 ```bash
 cd tools/license-scan

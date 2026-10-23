@@ -1,11 +1,9 @@
 <template>
   <div class="variables-tab">
     <div class="search-container">
-      <input
+      <CalcpadSearchField
         v-model="searchTerm"
-        type="text"
         placeholder="Search variables, macros, functions, custom units..."
-        class="search-input"
       />
     </div>
     <div class="variables-container p-3">
@@ -160,6 +158,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import CalcpadSearchField from './CalcpadSearchField.vue'
 import { writeClipboard } from '../services/clipboard'
 import type { VariablesData, VariableItem } from '../types'
 
@@ -516,22 +515,6 @@ watch(
 .search-container {
   padding: 12px;
   border-bottom: 1px solid var(--vscode-panel-border);
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px;
-  background: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border);
-  color: var(--vscode-input-foreground);
-  border-radius: 3px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--vscode-focusBorder);
 }
 
 .variables-container {

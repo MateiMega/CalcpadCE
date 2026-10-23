@@ -1,10 +1,9 @@
 <template>
   <div ref="rootEl" class="settings-tab">
     <div class="settings-toolbar">
-      <input
+      <CalcpadSearchField
         v-model="searchQuery"
-        type="text"
-        class="search-input"
+        class="settings-search"
         placeholder="Search settings..."
       />
       <CollapseAllButton :expand="allCollapsed" @click="setAll(!allCollapsed)" />
@@ -646,6 +645,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, reactive, nextTick } from 'vue'
+import CalcpadSearchField from './CalcpadSearchField.vue'
 import CollapseAllButton from './CollapseAllButton.vue'
 import type { WritableComputedRef } from 'vue'
 import type { PdfSettings, Settings, ThemeInfo, VersionConfig } from '../types'
@@ -1352,20 +1352,8 @@ watch(
   background: var(--vscode-editor-background);
 }
 
-.search-input {
+.settings-search {
   flex: 1;
-  padding: 8px;
-  background: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border);
-  color: var(--vscode-input-foreground);
-  border-radius: 3px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--vscode-focusBorder);
 }
 
 .settings-container {

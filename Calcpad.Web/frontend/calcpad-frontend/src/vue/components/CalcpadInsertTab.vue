@@ -1,13 +1,10 @@
 <template>
   <div class="insert-tab">
-    <div class="search-container">
-      <input
-        v-model="searchTerm"
-        type="text"
-        placeholder="Search items..."
-        class="search-input"
-      />
-    </div>
+    <CalcpadSearchField
+      v-model="searchTerm"
+      placeholder="Search items..."
+      class="search-container"
+    />
 
     <div class="insert-actions">
       <button @click="insertImage" class="icon" title="Insert an image from file" aria-label="Insert an image from file">
@@ -85,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import CalcpadSearchField from './CalcpadSearchField.vue'
 import CollapseAllButton from './CollapseAllButton.vue'
 import type { InsertItem } from '../types'
 import { replaceParameterPlaceholders } from '../../text/snippet-insert'
@@ -451,22 +449,6 @@ watch(
 
 .search-container {
   margin-bottom: 12px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px;
-  background: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border);
-  color: var(--vscode-input-foreground);
-  border-radius: 3px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--vscode-focusBorder);
 }
 
 /* Symbols Palette */
