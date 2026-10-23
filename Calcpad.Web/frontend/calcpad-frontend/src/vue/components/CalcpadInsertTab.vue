@@ -6,7 +6,7 @@
       class="search-container"
     />
 
-    <div class="insert-actions">
+    <div v-if="!searchTerm" class="insert-actions">
       <button @click="insertImage" class="icon" title="Insert an image from file" aria-label="Insert an image from file">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
           <rect x="2" y="2" width="12" height="12" rx="1" />
@@ -14,11 +14,11 @@
           <path d="m14 12-4-4-3 3-2-2-3 3" />
         </svg>
       </button>
-      <CollapseAllButton v-if="!searchTerm && displayItems.length > 0" @click="collapseAll" />
+      <CollapseAllButton v-if="displayItems.length > 0" @click="collapseAll" />
     </div>
 
     <!-- Symbols Palette -->
-    <div v-if="symbolGroups.length > 0" class="symbols-palette">
+    <div v-if="!searchTerm && symbolGroups.length > 0" class="symbols-palette">
       <div class="symbols-palette-header" title="Symbol Palette" @click="symbolsPaletteOpen = !symbolsPaletteOpen">
         <span class="symbols-palette-arrow" :class="{ open: symbolsPaletteOpen }">&#x25B6;</span>
         <span class="symbols-palette-title" aria-label="Symbol Palette">

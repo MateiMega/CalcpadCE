@@ -1,12 +1,12 @@
 <template>
-  <div ref="rootEl" class="settings-tab">
+  <div ref="rootEl" class="settings-tab" :class="{ 'search-active': searchActive }">
     <div class="settings-toolbar">
       <CalcpadSearchField
         v-model="searchQuery"
         class="settings-search"
         placeholder="Search settings..."
       />
-      <CollapseAllButton :expand="allCollapsed" @click="setAll(!allCollapsed)" />
+      <CollapseAllButton v-if="!searchActive" :expand="allCollapsed" @click="setAll(!allCollapsed)" />
     </div>
 
     <div class="settings-container">
@@ -1392,6 +1392,10 @@ watch(
 
 .expand-icon.collapsed {
   transform: rotate(-90deg);
+}
+
+.search-active .expand-icon {
+  visibility: hidden;
 }
 
 .setting-group {
