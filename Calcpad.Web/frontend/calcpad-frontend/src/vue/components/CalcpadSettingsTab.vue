@@ -645,9 +645,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, reactive } from 'vue'
-import CollapseAllButton from './CollapseAllButton.vue'
 import { ref, watch, computed, reactive, nextTick } from 'vue'
+import CollapseAllButton from './CollapseAllButton.vue'
 import type { WritableComputedRef } from 'vue'
 import type { PdfSettings, Settings, ThemeInfo, VersionConfig } from '../types'
 import { DEFAULT_PDF_SETTINGS, DEFAULT_VERSION_CONFIG } from '../types'
