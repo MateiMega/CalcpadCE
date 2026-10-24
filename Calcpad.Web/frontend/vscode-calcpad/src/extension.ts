@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
-import { pdfResponseError, isBrowserNotFound, isBrowserLaunchFailed, installPdfBrowser, CalcpadApiClient, combineSignals, resolveEffectivePdfSettings, pdfSettingsFromDocument, parseConvertErrorHeader, parseConvertPauseHeader, findMetadataCommentBlock, serializeMetadataComment, computeMetadataBlock, buildSourceDefinitionResolver, extractBodyHtml, UiOverrideStore, UiPauseStore, hasPauseSteps, writeUiOverrides, extractUiControls, variantRender, inlineImageSources, createReferenceResolver, isCompiledPath, documentHasUiDirectives, COMPILED_EXTENSION, MAX_COMPILED_IMAGE_TOTAL_BYTES, DEFAULT_PREVIEW_SIZE_MB, DEFAULT_CONSOLE_MESSAGES_PER_DOCUMENT, MAX_HTML_MIRROR_CHARS, MAX_INLINE_IMAGE_TOTAL_BYTES, previewSizeLimitChars, previewLimitNoticeHtml, formatSize, truncateForOutput, consoleRelayGuardScript, coerceLogLevel, setLogLevel, getLogLevel, ConnectionMonitor , getParseModeAt} from 'calcpad-frontend';
+import { pdfResponseError, isBrowserNotFound, isBrowserLaunchFailed, installPdfBrowser, CalcpadApiClient, combineSignals, resolveEffectivePdfSettings, pdfSettingsFromDocument, parseConvertErrorHeader, parseConvertPauseHeader, findMetadataCommentBlock, serializeMetadataComment, computeMetadataBlock, buildSourceDefinitionResolver, extractBodyHtml, UiOverrideStore, UiPauseStore, hasPauseSteps, writeUiOverrides, extractUiControls, variantRender, inlineImageSources, createReferenceResolver, isCompiledPath, documentHasUiDirectives, COMPILED_EXTENSION, MAX_COMPILED_IMAGE_TOTAL_BYTES, DEFAULT_PREVIEW_SIZE_MB, DEFAULT_CONSOLE_MESSAGES_PER_DOCUMENT, MAX_HTML_MIRROR_CHARS, MAX_INLINE_IMAGE_TOTAL_BYTES, previewSizeLimitChars, previewLimitNoticeHtml, formatSize, truncateForOutput, consoleRelayGuardScript, coerceLogLevel, setLogLevel, getLogLevel, ConnectionMonitor , getParseModeAt, findFileInfoSpan, planFileInfoStamp, stampFileInfoText, onlyReviewChanged, pdfDocumentTitle } from 'calcpad-frontend';
 import type { PdfSettings as FrontendPdfSettings, ExportVariant, UiControl, UiOverrides, CalcpadError } from 'calcpad-frontend';
 import { CalcpadServerLinter } from './calcpadServerLinter';
 import { CalcpadSemanticTokensProvider, semanticTokensLegend } from './calcpadSemanticTokensProvider';
@@ -185,6 +185,69 @@ async function saveUiValuesFor(document: vscode.TextDocument): Promise<number | 
     }
     uiOverridesDirty.delete(docKey);
     return Object.keys(overrides).length;
+}
+
+// Version stamped into file info on save; set on activation.
+let extensionVersion = '';
+/** Injected by rollup.config.js from tools/version.mjs; absent when compiled by tsc alone. */
+declare const __CALCPAD_VERSION__: string | undefined;
+
+function fileInfoStamper(): { userName: string; programVersion: string } {
+    return { userName: CalcpadSettingsManager.getInstance().getExtra('userName', ''), programVersion: extensionVersion };
+}
+
+// VS Code has no API for hiding a line, so the file-info comment's text is collapsed behind a placeholder.
+let fileInfoDecoration: vscode.TextEditorDecorationType | undefined = undefined;
+
+function refreshFileInfoDecorations(editors: readonly vscode.TextEditor[] = vscode.window.visibleTextEditors): void {
+    if (!fileInfoDecoration) return;
+    const show = CalcpadSettingsManager.getInstance().getExtraBool('showFileInfoLine', false);
+    for (const editor of editors) {
+        const document = editor.document;
+        if (document.languageId !== 'calcpad') continue;
+        const span = show ? null : findFileInfoSpan(i => document.lineAt(i).text, document.lineCount);
+        const options: vscode.DecorationOptions[] = [];
+        for (let line = span?.start ?? 0; span && line <= span.end; line++) {
+            options.push({
+                range: document.lineAt(line).range,
+                renderOptions: line === span.start
+                    ? { before: { contentText: '⋯ file info hidden (see Info tab)', color: new vscode.ThemeColor('editorCodeLens.foreground'), fontStyle: 'italic' } }
+                    : undefined,
+            });
+        }
+        editor.setDecorations(fileInfoDecoration, options);
+    }
+}
+
+/**
+ * Whether a document about to be saved gets its file-info comment stamped. An unchanged file
+ * is not an update, and an untitled one leaves the title for its first save under a real name.
+ */
+function stampsFileInfo(document: vscode.TextDocument): boolean {
+    return document.languageId === 'calcpad' && document.isDirty && !isCompiledPath(document.fileName);
+}
+
+/** The file as it is on disk, which tells a review-only save from a real update. */
+async function savedTextOf(document: vscode.TextDocument): Promise<string | undefined> {
+    if (document.isUntitled) return undefined;
+    try {
+        return new TextDecoder().decode(await vscode.workspace.fs.readFile(document.uri));
+    } catch {
+        return undefined;
+    }
+}
+
+async function fileInfoStampEdits(document: vscode.TextDocument): Promise<vscode.TextEdit[]> {
+    const saved = await savedTextOf(document);
+    const edit = planFileInfoStamp(document.getText().split(/\r?\n/), {
+        ...fileInfoStamper(),
+        fileName: document.isUntitled ? '' : document.fileName,
+        reviewOnly: saved !== undefined && onlyReviewChanged(saved, document.getText()),
+    });
+    const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
+    return [edit.isNew
+        ? vscode.TextEdit.insert(new vscode.Position(0, 0), edit.text + eol)
+        : vscode.TextEdit.replace(document.lineAt(edit.line).range.with({ end: document.lineAt(edit.endLine).range.end }), edit.text)];
 }
 
 /**
@@ -381,21 +444,20 @@ function showPreviewLoading(panel: vscode.WebviewPanel): () => void {
 
 /**
  * The PDF options for an export: the stored host defaults, overridden per key by the
- * document's own `pdf` metadata comment. The header title falls back to `sourceFileUri`'s
- * base name — the document being exported, not whichever editor happens to be focused.
+ * document's own `pdf` metadata comment. The header title is the file info's title, falling
+ * back to `sourceFileUri`'s base name — the document being exported, not whichever editor
+ * happens to be focused.
  */
 function getPdfSettings(documentContent?: string, sourceFileUri?: vscode.Uri): FrontendPdfSettings {
     const settingsManager = CalcpadSettingsManager.getInstance();
     const stored = settingsManager.getExtraObject('pdfSettings', {} as Partial<FrontendPdfSettings>);
-    const fromDocument = documentContent
-        ? pdfSettingsFromDocument(documentContent.split('\n'))
-        : {};
+    const lines = documentContent?.split(/\r?\n/) ?? [];
     const source = sourceFileUri ?? vscode.window.activeTextEditor?.document.uri;
     const fileName = source
         ? path.basename(source.fsPath, path.extname(source.fsPath))
         : '';
 
-    return resolveEffectivePdfSettings(stored, fromDocument, fileName);
+    return resolveEffectivePdfSettings(stored, pdfSettingsFromDocument(lines), pdfDocumentTitle(lines, fileName));
 }
 
 function getEffectivePreviewTheme(): 'light' | 'dark' {
@@ -1511,10 +1573,11 @@ async function saveAsCompiled() {
         // {library} reference to an absolute path — so this resolver only needs to expand
         // env vars in whatever plain relative/absolute src the author wrote directly.
         const resolve = createReferenceResolver(bundled.content, documentDir, expandEnvVars, path.resolve, os.homedir);
+        const stamped = stampFileInfoText(bundled.content, { ...fileInfoStamper(), fileName: saveUri.fsPath });
         // Refused rather than trimmed: the images become the file, so a compiled worksheet
         // that quietly dropped them would be a lossy save. The catch below turns it into
         // the failure message.
-        const compiled = await inlineImageSources(bundled.content, new VSCodeFileSystem(), resolve, {
+        const compiled = await inlineImageSources(stamped, new VSCodeFileSystem(), resolve, {
             maxTotalBytes: MAX_COMPILED_IMAGE_TOTAL_BYTES,
             onExceeded: 'fail',
         });
@@ -1799,6 +1862,10 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         // Store extension context for global access
         extensionContext = context;
+        // The build's version, matching the Settings tab; package.json's is stale outside a packaged .vsix.
+        extensionVersion = typeof __CALCPAD_VERSION__ === 'string'
+            ? __CALCPAD_VERSION__
+            : String(context.extension.packageJSON.version ?? '');
 
         // Create output channel for debugging
         outputChannel = new VSCodeLogger(vscode.window.createOutputChannel('CalcpadCE Extension'));
@@ -2076,6 +2143,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 panel, text, uri, false, undefined, kind === 'form', kind === 'report', true),
             outputChannel,
         );
+        compiledEditor.fileInfoStamp = fileInfoStamper;
+        compiledEditor.onDidWrite = () => vueUiProvider?.refreshFileInfo();
 
     // Unified document processing function
     let isProcessingDocument = false;
@@ -2237,6 +2306,22 @@ export async function activate(context: vscode.ExtensionContext) {
         uiOverrides.replace(documentUri, overrides);
         uiOverridesDirty.delete(documentUri);
     };
+    vueUiProvider.getCompiledSource = () => {
+        const uri = activeCompiledUri() ?? compiledSourceUri;
+        const text = uri && compiledEditor?.sourceFor(uri);
+        return uri && text !== undefined ? { uri, text } : undefined;
+    };
+    vueUiProvider.updateCompiledFileInfo = (uri, patch) => { compiledEditor?.updateFileInfo(uri, patch); };
+    // VS Code 1.82 can't save a custom document by uri, so only the active worksheet can be saved, via the workbench.
+    vueUiProvider.saveCompiled = async (uri) => {
+        if (!compiledEditor?.isDirty(uri)) return true;
+        if (activeCompiledUri()?.toString() !== uri.toString()) return false;
+        await vscode.commands.executeCommand('workbench.action.files.save');
+        return !compiledEditor.isDirty(uri);
+    };
+    fileInfoDecoration = vscode.window.createTextEditorDecorationType({ textDecoration: 'none; display: none;' });
+    vueUiProvider.onShowFileInfoLineChanged = () => refreshFileInfoDecorations();
+    refreshFileInfoDecorations();
     const vueUiProviderDisposable = vscode.window.registerWebviewViewProvider(
         CalcpadVueUIProvider.viewType,
         vueUiProvider
@@ -2617,21 +2702,30 @@ export async function activate(context: vscode.ExtensionContext) {
         vueUiProvider?.discardMetadataDraft(document.uri.toString());
     });
 
+    const onWillSaveTextDocument = vscode.workspace.onWillSaveTextDocument(event => {
+        if (stampsFileInfo(event.document)) event.waitUntil(fileInfoStampEdits(event.document));
+    });
+
     // Process document on save
     const onDidSaveTextDocument = vscode.workspace.onDidSaveTextDocument(document => {
         processDocument(document).catch(e => outputChannel.appendLine('[processDocument] Error: ' + e, 'warning'));
+        vueUiProvider?.refreshFileInfo();
     });
+
+    const onDidChangeVisibleTextEditors = vscode.window.onDidChangeVisibleTextEditors(editors => refreshFileInfoDecorations(editors));
 
     // Lint on document change (with debouncing)
     let lintTimeout: NodeJS.Timeout | unknown = undefined;
     const onDidChangeTextDocument = vscode.workspace.onDidChangeTextDocument(event => {
         if (event.document.languageId === 'calcpad' || event.document.languageId === 'plaintext') {
+            refreshFileInfoDecorations(vscode.window.visibleTextEditors.filter(e => e.document === event.document));
             if (lintTimeout) {
                 clearTimeout(lintTimeout as NodeJS.Timeout);
             }
             lintTimeout = setTimeout(() => {
                 invalidateUiControls(event.document);
                 processDocument(event.document).catch(e => outputChannel.appendLine('[processDocument] Error: ' + e, 'warning'));
+                vueUiProvider?.refreshFileInfo();
             }, 500);
             // Only schedule preview update when auto-run is on. Otherwise the
             // preview updates only when the panel is (re)opened or the user
@@ -2645,12 +2739,18 @@ export async function activate(context: vscode.ExtensionContext) {
     // A compiled worksheet is a custom editor, not a text one, so activating or closing
     // its tab never reaches onDidChangeActiveTextEditor — the tab events are what tell
     // the side panel a form has taken over.
-    const onDidChangeTabs = vscode.window.tabGroups.onDidChangeTabs(() => syncInputMode());
-    const onDidChangeTabGroups = vscode.window.tabGroups.onDidChangeTabGroups(() => syncInputMode());
+    // Also where a compiled worksheet coming to the front reaches the Info tab.
+    const onTabsChanged = () => {
+        syncInputMode();
+        vueUiProvider?.refreshFileInfo();
+    };
+    const onDidChangeTabs = vscode.window.tabGroups.onDidChangeTabs(onTabsChanged);
+    const onDidChangeTabGroups = vscode.window.tabGroups.onDidChangeTabGroups(onTabsChanged);
 
     // Update preview and variables when active editor changes
     const onDidChangeActiveTextEditor = vscode.window.onDidChangeActiveTextEditor(async editor => {
         updateMetadataContext(editor);
+        vueUiProvider?.refreshFileInfo();
         // A text editor taking over is what ends a compiled worksheet's claim on the
         // export commands; a webview taking focus is not, which is the point of both
         // this and previewSourceEditor.
@@ -2758,7 +2858,10 @@ export async function activate(context: vscode.ExtensionContext) {
             onDidChangeTextDocument,
             onDidOpenTextDocument,
             onDidCloseTextDocument,
+            onWillSaveTextDocument,
             onDidSaveTextDocument,
+            onDidChangeVisibleTextEditors,
+            fileInfoDecoration!,
             onDidChangeActiveTextEditor,
             onDidChangeTabs,
             onDidChangeTabGroups,

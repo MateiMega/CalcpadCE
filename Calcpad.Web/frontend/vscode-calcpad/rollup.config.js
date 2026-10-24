@@ -3,13 +3,15 @@ const commonjs = require('@rollup/plugin-commonjs');
 const resolve = require('@rollup/plugin-node-resolve');
 const json = require('@rollup/plugin-json');
 
-module.exports = {
+// Async so the ESM version helper can be imported: the version the webview is built with.
+module.exports = async () => ({
   input: 'src/extension.ts',
   output: {
     file: 'dist/extension.js',
     format: 'cjs',
     sourcemap: true,
-    exports: 'auto'
+    exports: 'auto',
+    intro: `const __CALCPAD_VERSION__ = ${JSON.stringify((await import('../../../tools/version.mjs')).resolveVersion())};`
   },
   external: ['vscode'],
   plugins: [
@@ -28,4 +30,4 @@ module.exports = {
       inlineSources: false
     })
   ]
-};
+});

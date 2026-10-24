@@ -119,6 +119,9 @@
         :initial-available-configs="availableConfigs"
         :initial-editor-font-family="editorFontFamily"
         :initial-available-fonts="availableFonts"
+        :initial-user-name="userName"
+        :focus-request="settingFocus?.paneId === pane.id ? settingFocus : null"
+        @focus-handled="settingFocus = null"
         :app-version="appVersion"
         :pdf-settings="pdfSettings"
         @update-settings="handleUpdateSettings"
@@ -147,6 +150,7 @@
         @open-fonts-folder="handleOpenFontsFolder"
         @refresh-fonts="handleRefreshFonts"
         @update-editor-font-family="handleUpdateEditorFontFamily"
+        @update-user-name="handleUpdateUserName"
       />
       <CalcpadVariablesTab
         v-else-if="pane.activeTab === 'variables'"
@@ -197,6 +201,19 @@
         @refresh-ui-controls="handleRefreshUiControls"
         @draft-dirty="handleMetadataDraftDirty"
       />
+      <CalcpadInfoTab
+        v-else-if="pane.activeTab === 'info'"
+        :info="fileInfo"
+        :has-document="fileInfoHasDocument"
+        :doc-key="fileInfoDocKey"
+        :user-name="userName"
+        :show-line="showFileInfoLine"
+        @update="handleUpdateFileInfo"
+        @mark-reviewed="postMessage({ type: 'markFileReviewed' })"
+        @update-show-line="handleUpdateShowFileInfoLine"
+        @open-settings="openSetting(pane, 'user', 'userName')"
+        @draft-dirty="handleInfoDraftDirty"
+      />
     </div>
     </div>
     </div>
@@ -215,7 +232,9 @@ import CalcpadExportTab from './CalcpadExportTab.vue'
 import CalcpadFilesTab from './CalcpadFilesTab.vue'
 import CalcpadErrorsTab from './CalcpadErrorsTab.vue'
 import CalcpadMetadataTab from './CalcpadMetadataTab.vue'
+import CalcpadInfoTab from './CalcpadInfoTab.vue'
 import { postMessage } from '../services/messaging'
+import type { FileInfo } from '../../services/file-info'
 import type { MetadataCommentBlock, MetadataCommentData, SettingsValues } from '../../text/metadata-comment'
 import { discardMetadataDraft } from '../metadata-drafts'
 import type { UiDirectiveData } from '../../text/ui-directive'
@@ -307,6 +326,12 @@ const prettifyIndentStyle = ref<'tab' | 'space'>('tab')
 const prettifyIndentSize = ref(4)
 const prettifyTrimTrailing = ref(true)
 
+const userName = ref('')
+const showFileInfoLine = ref(false)
+const fileInfo = ref<FileInfo | null>(null)
+const fileInfoHasDocument = ref(false)
+const fileInfoDocKey = ref('')
+
 const metadataBlock = ref<MetadataCommentBlock | null>(null)
 // #UI controls of the last input-form render, null until the host resolves them.
 const uiControls = ref<UiControl[] | null>(null)
@@ -323,17 +348,33 @@ const tabs = computed<Tab[]>(() => {
   ]
   // The metadata comment editor is driven by editor cursor tracking, available
   // in the VS Code webview and the desktop app (both host a real editor).
+  // File info is stamped on save, which only those two hosts have.
   if (props.versionConfig.isVSCode || props.versionConfig.isDesktop) {
+    base.unshift({ id: 'info', label: 'Info' })
     base.push({ id: 'metadata', label: 'Properties' })
   }
   return base
 })
 
+// The first pane reopens on the tab it was last left on; a new install starts on the first tab.
+const START_TAB_KEY = 'calcpad.sidebar.activeTab'
+const storedStartTab = (): string => {
+  let stored: string | null = null
+  try {
+    stored = localStorage.getItem(START_TAB_KEY)
+  } catch {
+    // ignore unavailable storage
+  }
+  return tabs.value.find(t => t.id === stored)?.id ?? tabs.value[0].id
+}
+panes.value[0].activeTab = storedStartTab()
+
 /**
  * Input mode fills a worksheet in rather than editing it — the host hides the editor,
  * and for a compiled worksheet there is no source behind it at all. The tabs that act
- * on source have nothing to act on there, so their content is shown inert: TOC, Export
- * and Settings still work, since a filled-in worksheet is still navigated and exported.
+ * on source have nothing to act on there, so their content is shown inert: TOC, Export,
+ * Settings and Info still work, since a filled-in worksheet is still navigated, exported
+ * and reviewed.
  */
 const SOURCE_TABS = ['insert', 'variables', 'formatting', 'errors', 'metadata']
 const INPUT_MODE_NOTE = 'Unavailable in input mode — this acts on the document source, which the input form does not edit.'
@@ -425,6 +466,13 @@ const hideSidebar = () => {
 
 const activateTab = (pane: Pane, tabId: string) => {
   pane.activeTab = tabId
+  if (pane === panes.value[0]) {
+    try {
+      localStorage.setItem(START_TAB_KEY, tabId)
+    } catch {
+      // ignore unavailable storage
+    }
+  }
   // Nothing below is worth asking the host for while the tab is inert.
   if (tabUnavailable(tabId)) return
 
@@ -450,12 +498,24 @@ const activateTab = (pane: Pane, tabId: string) => {
     postMessage({ type: 'getMetadataContext' })
   }
 
+  if (tabId === 'info') {
+    postMessage({ type: 'getFileInfo' })
+  }
+
   // Fetch the current document's plots the first time the Export tab is opened.
   // Users can refresh manually after that.
   if (tabId === 'export' && plots.value.length === 0 && !plotsLoading.value) {
     plotsLoading.value = true
     postMessage({ type: 'getPlots' })
   }
+}
+
+// A setting another tab links to, focused by the Settings tab in that pane once it shows.
+const settingFocus = ref<{ paneId: number; section: string; id: string } | null>(null)
+
+const openSetting = (pane: Pane, section: string, id: string) => {
+  settingFocus.value = { paneId: pane.id, section, id }
+  activateTab(pane, 'settings')
 }
 
 // Host-facing entry point (focusTab message, defineExpose): always targets the
@@ -639,6 +699,20 @@ const handleUpdateEditorFontFamily = (family: string) => {
   postMessage({ type: 'updateEditorFontFamily', family })
 }
 
+const handleUpdateUserName = (value: string) => {
+  userName.value = value
+  postMessage({ type: 'updateUserName', value })
+}
+
+const handleUpdateShowFileInfoLine = (enabled: boolean) => {
+  showFileInfoLine.value = enabled
+  postMessage({ type: 'updateShowFileInfoLine', enabled })
+}
+
+const handleUpdateFileInfo = (patch: Partial<FileInfo>) => {
+  postMessage({ type: 'updateFileInfo', patch })
+}
+
 const handleUpdatePdfSettings = (settings: PdfSettings) => {
   pdfSettings.value = { ...settings }
   postMessage({
@@ -729,7 +803,11 @@ const handleApplyMetadata = (payload: { data: MetadataCommentData; settings: Set
 }
 
 const handleMetadataDraftDirty = (payload: { docKey: string; dirty: boolean }) => {
-  postMessage({ type: 'metadataDraftDirty', docKey: payload.docKey, dirty: payload.dirty })
+  postMessage({ type: 'metadataDraftDirty', docKey: payload.docKey, dirty: payload.dirty, form: 'properties' })
+}
+
+const handleInfoDraftDirty = (payload: { docKey: string; dirty: boolean }) => {
+  postMessage({ type: 'metadataDraftDirty', docKey: payload.docKey, dirty: payload.dirty, form: 'info' })
 }
 
 // Message handler
@@ -770,6 +848,13 @@ const handleMessage = (event: MessageEvent) => {
       if (Array.isArray(message.availableConfigs)) availableConfigs.value = message.availableConfigs
       if (typeof message.editorFontFamily === 'string') editorFontFamily.value = message.editorFontFamily
       if (Array.isArray(message.availableFonts)) availableFonts.value = message.availableFonts
+      if (typeof message.userName === 'string') userName.value = message.userName
+      if (typeof message.showFileInfoLine === 'boolean') showFileInfoLine.value = message.showFileInfoLine
+      break
+    case 'fileInfo':
+      fileInfo.value = message.info ?? null
+      fileInfoHasDocument.value = !!message.hasDocument
+      fileInfoDocKey.value = String(message.docKey ?? '')
       break
     case 'editorFontFamilyChanged':
       if (typeof message.family === 'string') editorFontFamily.value = message.family
@@ -857,6 +942,8 @@ onMounted(() => {
   postMessage({ type: 'getInsertData' })
   postMessage({ type: 'getSettings' })
   postMessage({ type: 'getPdfSettings' })
+  // The starting tab never gets a click, so its data is asked for here.
+  activateTab(panes.value[0], panes.value[0].activeTab)
 
   if (props.versionConfig.isDesktop) {
     postMessage({ type: 'getOpenedFolder' })

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
-import { parseHeadings, DEFAULT_PDF_SETTINGS, extractPlotsFromHtml, buildZip, serializeMetadataComment, serializeSettingsDirective, hasMetadataContent, computeMetadataBlock, buildSourceDefinitionResolver, findUiDirectiveBlock, serializeUiDirective, DEFAULT_PREVIEW_SIZE_MB, DEFAULT_CONSOLE_MESSAGES_PER_DOCUMENT, coerceWriteMode, coerceLogLevel, stripCpdSnippetWrapper } from 'calcpad-frontend';
+import { parseHeadings, DEFAULT_PDF_SETTINGS, extractPlotsFromHtml, buildZip, serializeMetadataComment, serializeSettingsDirective, hasMetadataContent, computeMetadataBlock, buildSourceDefinitionResolver, findUiDirectiveBlock, serializeUiDirective, DEFAULT_PREVIEW_SIZE_MB, DEFAULT_CONSOLE_MESSAGES_PER_DOCUMENT, coerceWriteMode, coerceLogLevel, stripCpdSnippetWrapper, readFileInfo, planFileInfoEdit, sanitizeFileInfoPatch } from 'calcpad-frontend';
 import type { ParseMode, CalcpadError, ExtractedPlot, MetadataCommentBlock, MetadataCommentData, MetadataLayout, SettingsValues, UiDirectiveData, UiControl } from 'calcpad-frontend';
 import { CalcpadSettingsManager } from './calcpadSettings';
 import { CalcpadInsertManager } from './calcpadInsertManager';
@@ -34,6 +34,12 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
     public resolveUiControls?: () => Promise<UiControl[] | null>;
     /** Entered #UI values the panel rewrote, so the extension's in-memory ones follow. */
     public onUiOverridesEdited?: (documentUri: string, overrides: Record<string, string>) => void;
+    public onShowFileInfoLineChanged?: () => void;
+    /** The compiled worksheet being worked in, which has no text editor for the Info tab to read. */
+    public getCompiledSource?: () => { uri: vscode.Uri; text: string } | undefined;
+    public updateCompiledFileInfo?: (uri: vscode.Uri, patch: unknown) => void;
+    /** Saves a compiled worksheet with unsaved changes; false when it couldn't be saved. */
+    public saveCompiled?: (uri: vscode.Uri) => Promise<boolean>;
 
     /** Parse mode at a document line. Set by the extension, so the server cache is used first. */
     public getParseMode?: (document: vscode.TextDocument, line: number) => ParseMode;
@@ -392,6 +398,27 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
                     await this._handleUpdateMetadata(data);
                     break;
 
+                case 'getFileInfo':
+                    this.refreshFileInfo();
+                    break;
+
+                case 'updateFileInfo':
+                    await this._handleUpdateFileInfo(data.patch);
+                    break;
+
+                case 'markFileReviewed':
+                    await this._markFileReviewed();
+                    break;
+
+                case 'updateUserName':
+                    this._settingsManager.setExtra('userName', String(data.value ?? '').trim());
+                    break;
+
+                case 'updateShowFileInfoLine':
+                    this._settingsManager.setExtra('showFileInfoLine', !!data.enabled);
+                    this.onShowFileInfoLineChanged?.();
+                    break;
+
                 case 'getUiControls':
                     {
                         // A failed render leaves the panel unresolved rather than empty:
@@ -492,6 +519,8 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
             maxPreviewSizeMB: sm.getExtraNumber('maxPreviewSizeMB', DEFAULT_PREVIEW_SIZE_MB),
             maxPreviewConsoleMessages: sm.getExtraNumber(
                 'maxPreviewConsoleMessages', DEFAULT_CONSOLE_MESSAGES_PER_DOCUMENT),
+            userName: sm.getExtra('userName', ''),
+            showFileInfoLine: sm.getExtraBool('showFileInfoLine', false),
             activeConfig: sm.getActivePresetName(),
             availableConfigs: await sm.listPresets(),
         };
@@ -604,6 +633,74 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
     /** Push the metadata comment (or null) the cursor currently sits in to the panel. */
     public updateMetadataContext(block: MetadataCommentBlock | null) {
         this._view?.webview.postMessage({ type: 'metadataContext', block });
+    }
+
+    /** Push the source editor's file info to the panel's Info tab. */
+    public refreshFileInfo() {
+        const compiled = this.getCompiledSource?.();
+        const document = compiled ? undefined : this._calcpadSourceEditor()?.document;
+        const text = compiled?.text ?? document?.getText();
+        this._view?.webview.postMessage({
+            type: 'fileInfo',
+            info: text !== undefined ? readFileInfo(text.split(/\r?\n/)) : null,
+            hasDocument: text !== undefined,
+            docKey: (compiled?.uri ?? document?.uri)?.toString() ?? '',
+        });
+    }
+
+    private _calcpadSourceEditor(): vscode.TextEditor | undefined {
+        const editor = this.getSourceEditor?.() ?? vscode.window.activeTextEditor;
+        return editor && (editor.document.languageId === 'calcpad' || editor.document.languageId === 'plaintext')
+            ? editor
+            : undefined;
+    }
+
+    /** Applies the Info tab's edit to the comment it read; a document without one has nothing to edit yet. */
+    private async _handleUpdateFileInfo(patch: unknown): Promise<void> {
+        const compiled = this.getCompiledSource?.();
+        if (compiled) {
+            this.updateCompiledFileInfo?.(compiled.uri, patch);
+            this.refreshFileInfo();
+            return;
+        }
+        const editor = this._calcpadSourceEditor();
+        if (!editor) return;
+        const document = editor.document;
+        const lines = document.getText().split(/\r?\n/);
+        const current = readFileInfo(lines);
+        if (!current) return;
+
+        const edit = planFileInfoEdit(lines, { ...current, ...sanitizeFileInfoPatch(patch) });
+        await editor.edit(editBuilder => {
+            editBuilder.replace(document.lineAt(edit.line).range.with({ end: document.lineAt(edit.endLine).range.end }), edit.text);
+        });
+        this.refreshFileInfo();
+    }
+
+    /**
+     * Records the user as reviewer and saves. Pending edits are saved first, so the review
+     * is dated after them and its own save, changing nothing else, leaves last-updated alone.
+     */
+    private async _markFileReviewed(): Promise<void> {
+        const userName = this._settingsManager.getExtra('userName', '');
+        if (!userName) return;
+        const review = () => ({ reviewedBy: userName, reviewedAt: new Date().toISOString() });
+
+        const compiled = this.getCompiledSource?.();
+        if (compiled) {
+            if (!await this.saveCompiled?.(compiled.uri)) return;
+            this.updateCompiledFileInfo?.(compiled.uri, review());
+            await this.saveCompiled?.(compiled.uri);
+            this.refreshFileInfo();
+            return;
+        }
+
+        const document = this._calcpadSourceEditor()?.document;
+        if (!document) return;
+        if (document.isDirty && !await document.save()) return;
+        await this._handleUpdateFileInfo(review());
+        await document.save();
+        this.refreshFileInfo();
     }
 
     /** Tell the panel to drop a document's unapplied Properties form. */

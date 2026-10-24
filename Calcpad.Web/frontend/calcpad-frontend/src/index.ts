@@ -171,6 +171,12 @@ export type { ZipEntry } from './services/zip-writer';
 export { UiOverrideStore, readUiOverrides, writeUiOverrides, extractUiControls, classifyUiOverrides } from './services/ui-overrides';
 export { UiPauseStore, hasPauseSteps } from './services/ui-pause';
 export {
+    FILE_INFO_KEY, FILE_INFO_FIELDS, findFileInfoBlock, findFileInfoSpan, readFileInfo, sanitizeFileInfoPatch,
+    planFileInfoEdit, applyFileInfoEdit, writeFileInfo, stampFileInfo, planFileInfoStamp, fileStem,
+    stampFileInfoText, patchFileInfoText, savedSinceReview, onlyReviewChanged, pdfDocumentTitle,
+} from './services/file-info';
+export type { FileInfo, FileInfoStamp, FileInfoEdit } from './services/file-info';
+export {
     isCompiledPath,
     inlineImageSources,
     ImageBudgetError,
@@ -191,7 +197,7 @@ export type { UiOverrides, UiValueChange, UiControl, UiOverrideRow } from './ser
 
 // --- Message Bridge (base class) --------------------------------------------
 export { BaseMessageBridge, variantRender } from './services/message-bridge/base';
-export type { ExportRequest, VariantRender } from './services/message-bridge/base';
+export type { ExportRequest, VariantRender, DraftForm } from './services/message-bridge/base';
 
 // --- Headings / TOC ----------------------------------------------------------
 export type { TocHeading } from './services/headings';

@@ -3,6 +3,7 @@ import {
     serializeMetadataComment,
     type MetadataCommentData,
 } from '../text/metadata-comment';
+import { findFileInfoBlock } from './file-info';
 
 /** Control key (the preview's `data-ui-var`) mapped to the entered value. */
 export type UiOverrides = Record<string, string>;
@@ -41,7 +42,8 @@ const OVERRIDES_KEY = 'uiOverrides';
  *
  * Edits stay in memory so typing in a form never dirties the file; the
  * document is only touched when the user explicitly saves, which writes the
- * current map into a `'<!--{"uiOverrides":{...}}-->` comment at the top. That
+ * current map into a `'<!--{"uiOverrides":{...}}-->` comment at the top (under the
+ * file-info comment, when there is one). That
  * comment is what {@link syncFromSource} restores on the next open, and what it
  * keeps the in-memory map in step with while the document is edited.
  */
@@ -148,7 +150,7 @@ export function readUiOverrides(source: string): UiOverrides | null {
 /**
  * Returns {@link source} with the saved overrides updated: an existing `uiOverrides` comment is
  * rewritten in place keeping any other keys it carries, otherwise a new comment goes on the first
- * line. Passing an empty map removes the key, and with it the comment when nothing else is left.
+ * line, or the line after the file-info comment. Passing an empty map removes the key, and with it the comment when nothing else is left.
  */
 export function writeUiOverrides(source: string, overrides: UiOverrides): string {
     const eol = source.includes('\r\n') ? '\r\n' : '\n';
@@ -181,8 +183,10 @@ export function writeUiOverrides(source: string, overrides: UiOverrides): string
 
     if (Object.keys(overrides).length === 0) return source;
 
-    const comment = serializeMetadataComment({ [OVERRIDES_KEY]: overrides });
-    return [comment, ...lines].join(eol);
+    // The file-info comment owns the first line, so a new overrides comment goes right under it.
+    const fileInfo = findFileInfoBlock(lines);
+    lines.splice(fileInfo ? fileInfo.endLine + 1 : 0, 0, serializeMetadataComment({ [OVERRIDES_KEY]: overrides }));
+    return lines.join(eol);
 }
 
 /** Opening tag of an element the engine tagged as a `#UI` control. */

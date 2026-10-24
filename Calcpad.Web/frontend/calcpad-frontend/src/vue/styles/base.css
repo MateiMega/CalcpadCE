@@ -460,7 +460,7 @@ button.secondary {
   font-size: var(--calcpad-font-size-md);
 }
 
-button.secondary:hover {
+button.secondary:hover:not(:disabled) {
   background: var(--vscode-button-secondaryHoverBackground);
 }
 

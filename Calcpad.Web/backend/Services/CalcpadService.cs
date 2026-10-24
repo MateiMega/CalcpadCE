@@ -197,7 +197,7 @@ a = 10
 b = 5
 'Addition:
 sum = a + b
-'Subtraction:  
+'Subtraction:
 diff = a - b
 'Multiplication:
 prod = a * b
@@ -306,9 +306,9 @@ tan_angle = tan(angle°)";
                 }
                 stringBuilder.AppendLine("</p>");
             }
-            
+
             stringBuilder.AppendLine("</div>");
-            
+
             // Add error summary
             if (errors.Count != 0)
             {
@@ -321,7 +321,7 @@ tan_angle = tan(angle°)";
                 }
                 if (errors.Count > 0)
                     stringBuilder.Append(" ...");
-                
+
                 stringBuilder.AppendLine("</div>");
                 stringBuilder.AppendLine("<style>body {padding-top:1.1em;} .code p {margin:0; line-height:1.55em;}</style>");
             }
@@ -329,7 +329,7 @@ tan_angle = tan(angle°)";
             {
                 stringBuilder.AppendLine("<style>.code p {margin:0; line-height:1.55em;}</style>");
             }
-            
+
             return stringBuilder.ToString();
         }
 
@@ -400,7 +400,7 @@ tan_angle = tan(angle°)";
                 // First try to read from embedded resource (for single-file deployments)
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
                 var resourceName = "Calcpad.Server.template.html";
-                
+
                 using var stream = assembly.GetManifestResourceStream(resourceName);
                 if (stream != null)
                 {
@@ -409,7 +409,7 @@ tan_angle = tan(angle°)";
                     FileLogger.LogVerbose("Loaded HTML template from embedded resource");
                     return template;
                 }
-                
+
                 // Fallback to file system (for development and non-single-file deployments)
                 var templatePath = Path.Combine(AppContext.BaseDirectory, "template.html");
                 if (File.Exists(templatePath))
@@ -418,7 +418,7 @@ tan_angle = tan(angle°)";
                     FileLogger.LogVerbose("Loaded HTML template from file system", templatePath);
                     return template;
                 }
-                
+
                 throw new FileNotFoundException($"Template file not found at {templatePath}");
             }
             catch (Exception ex)
@@ -503,9 +503,8 @@ tan_angle = tan(angle°)";
         /// <para>
         /// A saved 'uiOverrides' comment only has any effect on the file that carries it -
         /// the host restores it by scanning the document you have open, before #include is
-        /// expanded, so one coming from an included file would otherwise sit inert in the
-        /// flattened text. Stripped the same way #local content is, whether or not the
-        /// including file wrapped it in #local/#global itself.
+        /// expanded. A 'fileInfo' comment goes too, so an included file's details
+        /// don't show up in the host file.
         /// </para>
         /// </summary>
         private static string ProcessIncludedContent(string content)
@@ -514,16 +513,16 @@ tan_angle = tan(angle°)";
                 return content;
 
             var isLocal = false;
-            var isUiOverridesComment = false;
+            var isHostComment = false;
             var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
             var outputLines = new List<string>();
 
             foreach (var line in lines)
             {
-                if (isUiOverridesComment)
+                if (isHostComment)
                 {
                     if (line.Contains("-->", StringComparison.Ordinal))
-                        isUiOverridesComment = false;
+                        isHostComment = false;
 
                     continue;
                 }
@@ -535,9 +534,9 @@ tan_angle = tan(angle°)";
                 {
                     isLocal = false;
                 }
-                else if (IsUiOverridesCommentStart(line))
+                else if (IsHostCommentStart(line))
                 {
-                    isUiOverridesComment = !line.Contains("-->", StringComparison.Ordinal);
+                    isHostComment = !line.Contains("-->", StringComparison.Ordinal);
                 }
                 else
                 {
@@ -554,16 +553,17 @@ tan_angle = tan(angle°)";
 
         /// <summary>
         /// True for the first line of a metadata comment ('<!--{...}-->) whose JSON carries
-        /// a 'uiOverrides' key. A cheap substring check rather than a JSON parse, matching
-        /// the rest of this method's line-based approach - good enough since the host always
-        /// writes the key verbatim.
+        /// a 'uiOverrides' or 'fileInfo' key. A cheap substring check rather than a JSON parse,
+        /// matching the rest of this method's line-based approach - good enough since the host
+        /// always writes the keys verbatim.
         /// </summary>
-        private static bool IsUiOverridesCommentStart(string line)
+        private static bool IsHostCommentStart(string line)
         {
             var trimmed = line.TrimStart();
             return (trimmed.StartsWith('\'') || trimmed.StartsWith('"'))
                 && trimmed.Contains("<!--", StringComparison.Ordinal)
-                && trimmed.Contains("uiOverrides", StringComparison.Ordinal);
+                && (trimmed.Contains("\"uiOverrides\"", StringComparison.Ordinal)
+                    || trimmed.Contains("\"fileInfo\"", StringComparison.Ordinal));
         }
     }
 }

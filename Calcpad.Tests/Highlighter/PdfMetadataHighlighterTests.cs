@@ -176,6 +176,46 @@ namespace Calcpad.Tests.Highlighter
         }
 
         [Fact]
+        public void UiOverrides_BelowFileInfo_DoesNotWarnCpd3416()
+        {
+            var result = Lint("'<!--{\"fileInfo\":{\"title\":\"Beam\"}}-->\n'<!--{\"uiOverrides\":{\"L:1\":\"8\"}}-->\n#UI L = 4");
+
+            Assert.DoesNotContain(result.Diagnostics, d => d.Code == "CPD-3416");
+        }
+
+        [Fact]
+        public void UiOverrides_OnSecondLineWithoutFileInfo_WarnsCpd3416()
+        {
+            var result = Lint("x = 1\n'<!--{\"uiOverrides\":{\"L:1\":\"8\"}}-->\n#UI L = 4");
+
+            Assert.Contains(result.Diagnostics, d => d.Code == "CPD-3416");
+        }
+
+        [Fact]
+        public void FileInfo_OnFirstLine_ReportsNothing()
+        {
+            var result = Lint("'<!--{\"fileInfo\":{\"title\":\"Beam\",\"author\":\"jsmith\"}}-->\nx = 1");
+
+            Assert.DoesNotContain(result.Diagnostics, d => d.Code == "CPD-3421" || d.Code == "CPD-3412");
+        }
+
+        [Fact]
+        public void FileInfo_NotOnFirstLine_WarnsCpd3421()
+        {
+            var result = Lint("x = 1\n'<!--{\"fileInfo\":{\"title\":\"Beam\"}}-->");
+
+            Assert.Contains(result.Diagnostics, d => d.Code == "CPD-3421");
+        }
+
+        [Fact]
+        public void FileInfo_NonStringValue_WarnsCpd3412()
+        {
+            var result = Lint("'<!--{\"fileInfo\":{\"title\":3}}-->\nx = 1");
+
+            Assert.Contains(result.Diagnostics, d => d.Code == "CPD-3412" && d.Message.Contains("title"));
+        }
+
+        [Fact]
         public void UiOverrides_Duplicate_WarnsCpd3417ForTheSecondOne()
         {
             // Only the first 'uiOverrides' comment in a file is ever read back, so a second

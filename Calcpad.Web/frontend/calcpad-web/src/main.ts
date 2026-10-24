@@ -23,6 +23,9 @@ import {
     MIN_PREVIEW_SIZE_MB,
     MIN_CONSOLE_MESSAGES_PER_DOCUMENT,
     MAX_INLINE_IMAGE_TOTAL_BYTES,
+    findFileInfoSpan,
+    planFileInfoStamp,
+    onlyReviewChanged,
     previewSizeLimitChars,
     previewLimitNoticeHtml,
     formatSize,
@@ -52,7 +55,7 @@ import { setActiveDocumentKeyResolver, getActiveDocumentKey, type EditorBridge }
 import { EditorGroup } from './editor/editor-group';
 import type { TabManager } from './tabs/tab-manager';
 import { toDisplayLogLevel } from 'calcpad-frontend';
-import type { UiControl, CalcpadLogLevel, DisplayLogLevel } from 'calcpad-frontend';
+import type { UiControl, CalcpadLogLevel, DisplayLogLevel, DraftForm } from 'calcpad-frontend';
 import './editor/vscode-variables.css';
 import 'calcpad-frontend/vue/styles/base.css';
 import './styles/app.css';
@@ -271,6 +274,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const activeBridge = tauriBridge ?? bridge!;
+    activeBridge.programVersion = appVersion;
     // Last session's panes, result mode and open files, stored apart from the settings.
     const workspace = await WorkspaceStateStore.load(isTauri);
 
@@ -355,6 +359,41 @@ async function bootstrap(): Promise<void> {
         remeasureEditorFontsWhenReady(family);
     });
 
+    // ---- File info line (hidden unless the Info tab's checkbox shows it) ----
+    const FILE_INFO_HIDDEN_SOURCE = 'calcpad-file-info';
+    const hiddenFileInfoEnd = new Map<string, number>();
+    const appliedFileInfoHiding = new Map<string, string>();
+
+    function applyFileInfoVisibility(group: EditorGroup): void {
+        const model = group.editor.getModel();
+        const span = model && editorBridge.getExtraSetting('showFileInfoLine') !== 'true'
+            ? findFileInfoSpan(i => model.getLineContent(i + 1), model.getLineCount())
+            : null;
+        // Hiding every line would leave Monaco nothing to show.
+        const hide = span && model && span.end + 1 < model.getLineCount() ? span : null;
+        const applied = `${model?.id}:${hide?.end ?? ''}`;
+        if (appliedFileInfoHiding.get(group.id) === applied) return;
+        appliedFileInfoHiding.set(group.id, applied);
+        if (hide) hiddenFileInfoEnd.set(group.id, hide.end);
+        else hiddenFileInfoEnd.delete(group.id);
+        (group.editor as unknown as { setHiddenAreas(ranges: monaco.IRange[], source?: unknown): void })
+            .setHiddenAreas(hide ? [new monaco.Range(hide.start + 1, 1, hide.end + 1, 1)] : [], FILE_INFO_HIDDEN_SOURCE);
+        keepCursorOutOfFileInfo(group);
+    }
+
+    // A new model puts the cursor at 1:1, which is inside the hidden comment; typing there edits it unseen.
+    function keepCursorOutOfFileInfo(group: EditorGroup): void {
+        const end = hiddenFileInfoEnd.get(group.id);
+        const selection = group.editor.getSelection();
+        if (end === undefined || !selection?.isEmpty() || selection.positionLineNumber > end + 1) return;
+        group.editor.setPosition({ lineNumber: end + 2, column: 1 });
+    }
+
+    window.addEventListener('message', (event) => {
+        if ((event as MessageEvent).data?.type !== 'showFileInfoLineChanged') return;
+        for (const g of groups.values()) applyFileInfoVisibility(g);
+    });
+
     // ---- Group-scoped refresh helpers ----
     function markerToSeverityInfo(severity: monaco.MarkerSeverity) {
         switch (severity) {
@@ -415,8 +454,8 @@ async function bootstrap(): Promise<void> {
     const uiOverridesDirty = new Set<string>();
     // The #pause step each input form is on.
     const uiPause = new UiPauseStore();
-    // Documents with an unapplied Properties form, reported by the panel.
-    const metadataDirty = new Set<string>();
+    // Documents with an unapplied Properties or Info form, and which, as reported by the panel.
+    const metadataDirty = new Map<string, Set<DraftForm>>();
     // Controls each document's last input-form render produced, which is what tells the
     // Properties tab whether a saved value still applies to anything.
     const uiControls = new Map<string, UiControl[]>();
@@ -587,8 +626,11 @@ async function bootstrap(): Promise<void> {
     });
     activeBridge.setUiControlsProvider(() => uiControls.get(activeUiDocKey()) ?? null);
     activeBridge.setUiControlsSink((controls) => uiControls.set(activeUiDocKey(), controls));
-    activeBridge.setMetadataDirtySink((docKey, dirty) => {
-        if (dirty) metadataDirty.add(docKey);
+    activeBridge.setMetadataDirtySink((docKey, dirty, form) => {
+        const forms = metadataDirty.get(docKey) ?? new Set<DraftForm>();
+        if (dirty) forms.add(form);
+        else forms.delete(form);
+        if (forms.size) metadataDirty.set(docKey, forms);
         else metadataDirty.delete(docKey);
     });
 
@@ -837,6 +879,7 @@ async function bootstrap(): Promise<void> {
         // Refresh active-group-scoped UI (Problems panel, sidebar TOC, preview).
         refreshProblemsFor(group);
         activeBridge.refreshHeadings();
+        activeBridge.refreshFileInfo();
         refreshUiDirtyIndicator();
         syncInputMode();
         if (appInstance.isPreviewVisible()) void refreshPreviewFor(group);
@@ -975,7 +1018,9 @@ async function bootstrap(): Promise<void> {
         let previewTimer: ReturnType<typeof setTimeout> | null = null;
         let tocTimer: ReturnType<typeof setTimeout> | null = null;
         group.disposables.push(
+            ed.onDidChangeModel(() => applyFileInfoVisibility(group)),
             ed.onDidChangeModelContent(() => {
+                applyFileInfoVisibility(group);
                 if (definitionsTimer) clearTimeout(definitionsTimer);
                 definitionsTimer = setTimeout(() => {
                     invalidateUiControls(group);
@@ -987,7 +1032,10 @@ async function bootstrap(): Promise<void> {
                 }
                 if (group === activeGroup) {
                     if (tocTimer) clearTimeout(tocTimer);
-                    tocTimer = setTimeout(() => activeBridge.refreshHeadings(), 800);
+                    tocTimer = setTimeout(() => {
+                        activeBridge.refreshHeadings();
+                        activeBridge.refreshFileInfo();
+                    }, 800);
                 }
             }),
         );
@@ -999,6 +1047,7 @@ async function bootstrap(): Promise<void> {
         let metadataContextTimer: ReturnType<typeof setTimeout> | null = null;
         group.disposables.push(
             ed.onDidChangeCursorPosition(() => {
+                keepCursorOutOfFileInfo(group);
                 if (group === activeGroup) {
                     if (metadataContextTimer) clearTimeout(metadataContextTimer);
                     metadataContextTimer = setTimeout(() => {
@@ -1029,11 +1078,15 @@ async function bootstrap(): Promise<void> {
             // The mode switch below renders the form itself, so rendering here first would
             // just be a preview nobody sees.
             if (!enteringUi && appInstance.isPreviewVisible()) void refreshPreviewFor(group);
-            if (group === activeGroup) activeBridge.refreshHeadings();
+            if (group === activeGroup) {
+                activeBridge.refreshHeadings();
+                activeBridge.refreshFileInfo();
+            }
             void refreshDefinitionsFor(group);
             if (enteringUi) autoEnterUiMode();
         });
 
+        applyFileInfoVisibility(group);
         // Initial definitions population for the seeded tab.
         setTimeout(() => void refreshDefinitionsFor(group), 500);
     }
@@ -1802,14 +1855,16 @@ async function bootstrap(): Promise<void> {
     }
 
     /**
-     * A Properties form edited but not applied lives only in the panel, so closing the
+     * A Properties or Info form edited but not applied lives only in the panel, so closing the
      * document it belongs to throws it away. Returns false when the user backs out.
      */
     async function confirmDiscardMetadataDraft(docKey: string, title: string): Promise<boolean> {
-        if (!metadataDirty.has(docKey)) return true;
+        const forms = metadataDirty.get(docKey);
+        if (!forms) return true;
+        const names = [forms.has('properties') && 'Properties', forms.has('info') && 'Info'].filter(Boolean).join(' and ');
         const choice = await confirmThreeWay({
-            title: 'Unsaved properties',
-            message: `Discard the unapplied Properties changes to ${title}?`,
+            title: forms.has('properties') ? 'Unsaved properties' : 'Unsaved file info',
+            message: `Discard the unapplied ${names} changes to ${title}?`,
             yesLabel: 'Discard',
             noLabel: 'Keep Editing',
         });
@@ -2083,20 +2138,45 @@ async function bootstrap(): Promise<void> {
         }
 
         /**
+         * Writes the file-info comment into the active model just before it is saved to
+         * `filePath`, returning the content to write. `saved` is the file as it is on disk,
+         * absent for a new one.
+         */
+        function stampedContentFor(filePath: string, saved?: string): string {
+            const model = tabs.activeModel;
+            if (!model) return '';
+            const edit = planFileInfoStamp(model.getLinesContent(), {
+                userName: editorBridge.getExtraSetting('userName') ?? '',
+                programVersion: appVersion,
+                fileName: filePath,
+                reviewOnly: saved !== undefined && onlyReviewChanged(saved, model.getValue()),
+            });
+            const range = edit.isNew
+                ? new monaco.Range(1, 1, 1, 1)
+                : new monaco.Range(edit.line + 1, 1, edit.endLine + 1, model.getLineMaxColumn(edit.endLine + 1));
+            // Through the model: a compiled worksheet's editor is read-only and would reject executeEdits.
+            model.pushEditOperations([], [{ range, text: edit.isNew ? edit.text + '\n' : edit.text }], () => null);
+            return model.getValue();
+        }
+
+        /**
          * Save the active tab, prompting for a path when it has none. Returns true if saved,
          * false if the user cancelled or there is no active tab.
          */
         async function saveActive(): Promise<boolean> {
             const active = tabs.activeTab;
             if (!active) return false;
-            const content = tabs.activeModel?.getValue() ?? '';
             if (active.filePath) {
+                // Saving an unchanged file is not an update.
+                const content = tabs.isDirty(active.id)
+                    ? stampedContentFor(active.filePath, await tauriBridge!.readFile(active.filePath).catch(() => undefined))
+                    : tabs.activeModel?.getValue() ?? '';
                 await tauriBridge!.saveFile(active.filePath, content);
                 tabs.markActiveSaved();
                 await deleteDraft(active.id);
                 return true;
             }
-            const newPath = await tauriBridge!.saveFileAs(content);
+            const newPath = await tauriBridge!.saveFileAs(stampedContentFor);
             if (!newPath) return false;
             tabs.markActiveSaved({ filePath: newPath });
             // Saving as .cpdz turns the tab into a compiled worksheet.
@@ -2107,11 +2187,14 @@ async function bootstrap(): Promise<void> {
         }
 
         persistActiveTab = saveActive;
+        activeBridge.setDocumentSaver({
+            isDirty: () => !!tabs.activeTab && tabs.isDirty(tabs.activeTab.id),
+            save: saveActive,
+        });
 
         async function saveAsActive(): Promise<boolean> {
             const active = tabs.activeTab;
-            const content = tabs.activeModel?.getValue() ?? '';
-            const newPath = await tauriBridge!.saveFileAs(content);
+            const newPath = await tauriBridge!.saveFileAs(stampedContentFor);
             if (!newPath) return false;
             tabs.markActiveSaved({ filePath: newPath });
             applyCompiledWorksheetMode(activeGroup);
@@ -2803,7 +2886,7 @@ async function bootstrap(): Promise<void> {
             const dirty: { group: EditorGroup; id: string }[] = [];
             for (const g of groups.values()) {
                 for (const t of g.tabs.all) {
-                    // An unapplied Properties form is as much unsaved work as a dirty buffer.
+                    // An unapplied Properties or Info form is as much unsaved work as a dirty buffer.
                     if (t.dirty || metadataDirty.has(metadataDocKeyFor(g, t.id))) dirty.push({ group: g, id: t.id });
                 }
             }
