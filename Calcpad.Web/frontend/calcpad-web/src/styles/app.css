@@ -14,10 +14,7 @@ html, body, #app {
     overflow: hidden;
 }
 
-/* Tell the browser which color scheme to use so native widgets (the <select>
- * popup, scrollbars, form controls) render with the matching OS theme instead
- * of the default. CSS alone cannot style the popup of a <select>. Follows
- * <html data-theme="…">, which is set by the app-theme applier. */
+/* Native controls follow the active app theme. */
 html {
     color-scheme: dark;
 }

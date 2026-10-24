@@ -33,6 +33,29 @@ button {
   font-family: inherit;
 }
 
+select:not([multiple]):not([size]),
+select:not([multiple]):not([size])::picker(select) {
+  appearance: base-select;
+}
+
+select::picker(select) {
+  background: var(--vscode-dropdown-listBackground);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border);
+  border-radius: 3px;
+}
+
+select option {
+  padding: 4px 8px;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
 .monaco-editor,
 .preview-pane,
 input,

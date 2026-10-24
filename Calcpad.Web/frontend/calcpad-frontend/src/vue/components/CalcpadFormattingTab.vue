@@ -6,16 +6,16 @@
         Auto-indents the active document. Content is not modified outside of whitespace.
       </p>
 
-      <div class="form-row">
-        <label for="indentStyle">Indent style</label>
+      <div class="setting-group">
+        <label for="indentStyle">Indent style:</label>
         <select id="indentStyle" :value="indentStyle" @change="onIndentStyleChange">
           <option value="tab">Tab</option>
           <option value="space">Space</option>
         </select>
       </div>
 
-      <div class="form-row" v-if="indentStyle === 'space'">
-        <label for="indentSize">Spaces per level</label>
+      <div class="setting-group" v-if="indentStyle === 'space'">
+        <label for="indentSize">Spaces per level:</label>
         <input
           id="indentSize"
           type="number"
@@ -26,8 +26,8 @@
         />
       </div>
 
-      <div class="form-row">
-        <label class="checkbox-label">
+      <div class="setting-group">
+        <label>
           <input
             type="checkbox"
             :checked="trimTrailingWhitespace"
@@ -119,46 +119,6 @@ function onPrettify() {
   padding: 1px 4px;
   border-radius: 2px;
   font-size: var(--calcpad-font-size-sm);
-}
-
-.form-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: var(--calcpad-font-size-md);
-  color: var(--vscode-foreground);
-}
-
-.form-row label {
-  min-width: 140px;
-}
-
-.form-row select,
-.form-row input[type="number"] {
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  padding: 4px 6px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-  border-radius: 2px;
-}
-
-.form-row input[type="number"] {
-  width: 70px;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  min-width: 0;
-}
-
-.checkbox-label input[type="checkbox"] {
-  margin: 0;
 }
 
 .actions {
