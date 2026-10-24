@@ -87,6 +87,19 @@ const emit = defineEmits<{
 
 const expandedPaths = ref<string[]>([])
 const showAll = ref(false)
+const STORAGE_KEY = 'calcpad.files.expanded.'
+
+watch(() => props.openedFolder, (folder) => {
+  expandedPaths.value = folder
+    ? JSON.parse(localStorage.getItem(STORAGE_KEY + folder) ?? '[]')
+    : []
+}, { immediate: true })
+
+watch(expandedPaths, (paths) => {
+  if (props.openedFolder) {
+    localStorage.setItem(STORAGE_KEY + props.openedFolder, JSON.stringify(paths))
+  }
+}, { flush: 'sync' })
 
 // Extension filter: only worksheets — editable .cpd and compiled .cpdz — are
 // surfaced by default. Folders are always kept so the user can drill in.
@@ -129,11 +142,6 @@ const filteredRoots = computed(() =>
   showAll.value ? props.treeRoots : filterNodes(props.treeRoots)
 )
 
-// Reset expansion state whenever the workspace root changes.
-watch(() => props.openedFolder, () => {
-  expandedPaths.value = []
-})
-
 const folderBasename = computed(() => {
   if (!props.openedFolder) return ''
   const normalized = props.openedFolder.replace(/\\/g, '/').replace(/\/+$/, '')
@@ -141,39 +149,40 @@ const folderBasename = computed(() => {
   return idx >= 0 ? normalized.substring(idx + 1) : normalized
 })
 
-const findNode = (nodes: FileNode[], targetPath: string): FileNode | null => {
-  for (const n of nodes) {
-    if (n.path === targetPath) return n
-    if (n.children) {
-      const found = findNode(n.children, targetPath)
-      if (found) return found
-    }
-  }
-  return null
-}
-
 const handleToggle = (path: string, isExpanding: boolean) => {
   if (isExpanding) {
     if (!expandedPaths.value.includes(path)) {
       expandedPaths.value = [...expandedPaths.value, path]
-    }
-    const node = findNode(props.treeRoots, path)
-    if (node && !node.loaded) {
-      emit('expand-folder', path)
     }
   } else {
     expandedPaths.value = expandedPaths.value.filter(p => p !== path)
   }
 }
 
+const requestedDirectories = new WeakSet<FileNode>()
+const loadExpandedDirectories = (nodes: FileNode[]) => {
+  for (const node of nodes) {
+    if (!node.isDirectory || !expandedPaths.value.includes(node.path)) continue
+    if (!node.loaded) {
+      if (!requestedDirectories.has(node)) {
+        requestedDirectories.add(node)
+        emit('expand-folder', node.path)
+      }
+    } else if (node.children) {
+      loadExpandedDirectories(node.children)
+    }
+  }
+}
+
+watch([() => props.treeRoots, expandedPaths], () => {
+  loadExpandedDirectories(props.treeRoots)
+}, { immediate: true, deep: true })
+
 const collapseAll = () => {
   expandedPaths.value = []
 }
 
 const onRefresh = () => {
-  // Re-fetched roots come back unloaded, so any previously expanded subfolders
-  // would otherwise show as expanded but empty.
-  expandedPaths.value = []
   emit('refresh-folder')
 }
 
