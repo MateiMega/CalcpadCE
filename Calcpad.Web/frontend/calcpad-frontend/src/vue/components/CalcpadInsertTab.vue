@@ -34,7 +34,7 @@
           <div v-show="isGroupOpen(group.name)" class="symbol-grid">
             <button
               v-for="item in group.items"
-              :key="item.tag"
+              :key="itemKeys.get(item)"
               class="symbol-btn"
               :title="buildTooltip(item)"
               @click="insertItem(item)"
@@ -55,7 +55,7 @@
     <div v-else-if="searchTerm">
       <div
         v-for="item in displayItems"
-        :key="item.tag"
+        :key="itemKeys.get(item)"
         @click="insertItem(item)"
         class="insert-item"
         :title="buildTooltip(item)"
@@ -146,6 +146,10 @@ const symbolGroups = computed((): SymbolGroup[] => {
 })
 
 // Computed
+const itemKeys = computed(() => new Map(
+  props.insertItems.map((item, index) => [item, index])
+))
+
 const filteredItems = computed(() => {
   if (!searchTerm.value.trim()) {
     return []
