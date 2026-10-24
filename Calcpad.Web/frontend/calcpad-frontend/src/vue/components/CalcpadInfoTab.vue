@@ -193,13 +193,11 @@ function formatTimestamp(iso: string): string {
   overflow-y: auto;
   flex: 1;
   padding: 12px;
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-foreground);
 }
 
 .section-title {
   margin: 16px 0 8px 0;
-  font-size: var(--calcpad-font-size-lg);
   font-weight: 600;
 }
 
@@ -266,7 +264,6 @@ function formatTimestamp(iso: string): string {
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border, transparent);
   padding: 4px 6px;
-  font-size: var(--calcpad-font-size-md);
   font-family: var(--vscode-font-family);
   border-radius: 2px;
 }

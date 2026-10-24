@@ -562,7 +562,6 @@ watch(
   cursor: pointer;
   background: var(--vscode-sideBar-background);
   font-weight: bold;
-  font-size: var(--calcpad-font-size-sm);
   user-select: none;
 }
 
@@ -571,12 +570,12 @@ watch(
 }
 
 .symbols-palette-examples {
-  font-size: var(--calcpad-font-size-lg);
+  font-size: var(--calcpad-font-size-icon-large);
 }
 
 .symbols-palette-arrow {
   display: inline-block;
-  font-size: var(--calcpad-font-size-xxs);
+  font-size: var(--calcpad-font-size-icon-small);
   transition: transform 0.2s ease;
 }
 
@@ -599,7 +598,6 @@ watch(
   padding: 3px 6px;
   cursor: pointer;
   user-select: none;
-  font-size: var(--calcpad-font-size-sm);
   font-weight: 600;
   color: var(--vscode-descriptionForeground);
 }
@@ -610,7 +608,7 @@ watch(
 
 .symbol-group-arrow {
   display: inline-block;
-  font-size: var(--calcpad-font-size-xxs);
+  font-size: var(--calcpad-font-size-icon-small);
   transition: transform 0.2s ease;
 }
 
@@ -620,7 +618,7 @@ watch(
 
 .symbol-group-label {
   flex: 1;
-  font-size: var(--calcpad-font-size-lg);
+  font-size: var(--calcpad-font-size-icon-large);
   font-weight: normal;
   color: var(--vscode-editor-foreground);
 }
@@ -643,7 +641,7 @@ watch(
   border: 1px solid var(--vscode-widget-border);
   border-radius: 2px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-lg);
+  font-size: var(--calcpad-font-size-icon-large);
   color: var(--vscode-editor-foreground);
   line-height: 1;
 }
@@ -720,18 +718,15 @@ watch(
 .item-display {
   font-weight: bold;
   color: var(--vscode-editor-foreground);
-  font-size: var(--calcpad-font-size-md);
   font-family: monospace;
 }
 
 .item-description {
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-descriptionForeground);
   margin-top: 2px;
 }
 
 .item-category {
-  font-size: var(--calcpad-font-size-xs);
   color: var(--vscode-descriptionForeground);
   margin-top: 2px;
   opacity: 0.7;
@@ -767,7 +762,6 @@ watch(
   border: 1px solid var(--vscode-widget-border);
   border-radius: 3px;
   font-weight: bold;
-  font-size: var(--calcpad-font-size-sm);
   position: relative;
 }
 
@@ -802,7 +796,6 @@ watch(
   border: 1px solid var(--vscode-widget-border);
   border-radius: 2px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-editor-foreground);
   text-align: left;
 }

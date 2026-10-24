@@ -135,7 +135,6 @@ const onCopyAllErrors = () => {
   padding: 6px 8px;
   border-radius: 3px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-foreground);
 }
 
@@ -149,7 +148,6 @@ const onCopyAllErrors = () => {
 }
 
 .error-source {
-  font-size: var(--calcpad-font-size-xs);
   color: var(--vscode-badge-foreground, var(--vscode-foreground));
   background: var(--vscode-badge-background);
   padding: 1px 4px;
@@ -162,7 +160,6 @@ const onCopyAllErrors = () => {
 }
 
 .error-location {
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-foreground);
   opacity: 0.7;
   white-space: nowrap;

@@ -999,7 +999,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   font-family: var(--vscode-font-family);
-  font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
 }
@@ -1096,7 +1095,6 @@ onUnmounted(() => {
   background: transparent;
   color: var(--vscode-tab-inactiveForeground);
   cursor: pointer;
-  font-size: var(--calcpad-font-size-sm);
   font-weight: normal;
   border-radius: 0;
   transition: background-color 0.2s ease, color 0.2s ease, border-bottom-color 0.2s ease;
@@ -1152,7 +1150,6 @@ onUnmounted(() => {
   flex: 0 0 auto;
   margin: 0;
   padding: 8px 12px;
-  font-size: var(--calcpad-font-size-sm);
   font-style: italic;
   color: var(--vscode-descriptionForeground);
   border-bottom: 1px solid var(--vscode-widget-border);

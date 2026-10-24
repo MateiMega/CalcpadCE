@@ -1390,7 +1390,6 @@ watch(
   gap: 6px;
   margin: 12px 0 8px 0;
   color: var(--vscode-sideBarSectionHeader-foreground);
-  font-size: var(--calcpad-font-size-lg);
   font-weight: bold;
   border-bottom: 1px solid var(--vscode-panel-border);
   padding-bottom: 4px;
@@ -1408,7 +1407,6 @@ watch(
 
 .expand-icon {
   transition: transform 0.2s;
-  font-size: var(--calcpad-font-size-sm);
 }
 
 .expand-icon.collapsed {
@@ -1426,7 +1424,6 @@ watch(
 .setting-group label {
   display: block;
   margin-bottom: 4px;
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-input-foreground);
   font-weight: normal;
 }
@@ -1440,7 +1437,6 @@ watch(
   border: 1px solid var(--vscode-input-border);
   color: var(--vscode-input-foreground);
   border-radius: 3px;
-  font-size: var(--calcpad-font-size-md);
 }
 
 .setting-group input[type="checkbox"] {
@@ -1467,7 +1463,6 @@ watch(
 
 .setting-info {
   margin-left: 4px;
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-descriptionForeground);
   cursor: help;
 }
@@ -1480,7 +1475,6 @@ watch(
 .setting-error {
   display: block;
   margin-top: 4px;
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-errorForeground, #f48771);
 }
 
@@ -1505,7 +1499,6 @@ watch(
 }
 
 .app-version {
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-descriptionForeground);
 }
 
@@ -1518,7 +1511,6 @@ watch(
 
 .no-results {
   padding: 16px 4px;
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-descriptionForeground);
   text-align: center;
 }

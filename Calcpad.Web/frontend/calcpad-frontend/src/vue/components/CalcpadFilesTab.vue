@@ -261,7 +261,6 @@ const onCopyRelativePath = async () => {
 
 .files-empty-message {
   margin: 0 0 12px 0;
-  font-size: var(--calcpad-font-size-md);
 }
 
 .files-open-btn {
@@ -271,7 +270,6 @@ const onCopyRelativePath = async () => {
   border: none;
   border-radius: 2px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-md);
 }
 
 .files-open-btn:hover {
@@ -285,7 +283,6 @@ const onCopyRelativePath = async () => {
   padding: 4px 8px;
   gap: 6px;
   border-bottom: 1px solid var(--vscode-widget-border);
-  font-size: var(--calcpad-font-size-sm);
   text-transform: uppercase;
   color: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-foreground));
   background: var(--vscode-sideBarSectionHeader-background, var(--vscode-editor-background));
@@ -323,7 +320,6 @@ const onCopyRelativePath = async () => {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-descriptionForeground);
   cursor: pointer;
   user-select: none;

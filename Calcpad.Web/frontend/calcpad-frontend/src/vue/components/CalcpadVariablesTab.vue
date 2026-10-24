@@ -573,7 +573,6 @@ watch(
 
 .expand-icon {
   transition: transform 0.2s;
-  font-size: var(--calcpad-font-size-md);
 }
 
 .variables-content {
@@ -604,13 +603,11 @@ watch(
 
 .variable-name {
   font-weight: 600;
-  font-size: var(--calcpad-font-size-lg);
   color: var(--vscode-symbolIcon-variableForeground);
   margin-bottom: 4px;
 }
 
 .variable-type {
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-descriptionForeground);
   margin-bottom: 4px;
   font-style: italic;
@@ -618,7 +615,6 @@ watch(
 
 .variable-content {
   font-family: var(--vscode-editor-font-family);
-  font-size: var(--calcpad-font-size-sm);
   background: var(--vscode-textCodeBlock-background);
   padding: 4px 6px;
   border-radius: 2px;
@@ -630,7 +626,6 @@ watch(
 }
 
 .variable-source {
-  font-size: var(--calcpad-font-size-xs);
   color: var(--vscode-descriptionForeground);
   margin-top: 4px;
 }

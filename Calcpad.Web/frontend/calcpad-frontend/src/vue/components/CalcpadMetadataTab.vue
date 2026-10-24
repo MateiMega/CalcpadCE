@@ -898,7 +898,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
 
 .section-title {
   margin: 0 0 8px 0;
-  font-size: var(--calcpad-font-size-lg);
   font-weight: 600;
   color: var(--vscode-foreground);
 }
@@ -914,7 +913,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   border-radius: 4px;
   border-left: 2px solid var(--target-color);
   background: var(--vscode-textCodeBlock-background);
-  font-size: var(--calcpad-font-size-md);
   transition: border-color 150ms ease;
 }
 
@@ -936,7 +934,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   border: none;
   padding: 0;
   color: var(--vscode-descriptionForeground);
-  font-size: var(--calcpad-font-size-sm);
   cursor: pointer;
 }
 
@@ -949,7 +946,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   flex: none;
   color: var(--target-color);
   opacity: 0.85;
-  font-size: var(--calcpad-font-size-sm);
   font-style: italic;
   transition: color 150ms ease;
 }
@@ -973,7 +969,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
 }
 
 .section-desc {
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-descriptionForeground);
   margin: 0 0 16px 0;
   line-height: 1.5;
@@ -983,11 +978,9 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   background: var(--vscode-textCodeBlock-background);
   padding: 1px 4px;
   border-radius: 2px;
-  font-size: var(--calcpad-font-size-sm);
 }
 
 .warning {
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-editorWarning-foreground, #cca700);
   margin: 0 0 12px 0;
   line-height: 1.5;
@@ -999,7 +992,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
 
 .field > label {
   display: block;
-  font-size: var(--calcpad-font-size-md);
   font-weight: 600;
   color: var(--vscode-foreground);
   margin-bottom: 6px;
@@ -1023,12 +1015,10 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
 .setting-info {
   cursor: help;
   color: var(--vscode-descriptionForeground);
-  font-size: var(--calcpad-font-size-sm);
 }
 
 .setting-error {
   color: var(--vscode-errorForeground, #f14c4c);
-  font-size: var(--calcpad-font-size-sm);
   margin-top: 2px;
   margin-left: 2px;
 }
@@ -1047,7 +1037,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
 
 .sub-label {
   min-width: 80px;
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-foreground);
 }
 
@@ -1058,7 +1047,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border, transparent);
   padding: 4px 6px;
-  font-size: var(--calcpad-font-size-md);
   font-family: var(--vscode-font-family);
   border-radius: 2px;
 }
@@ -1069,7 +1057,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   background: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border, transparent);
-  font-size: var(--calcpad-font-size-sm);
   font-family: var(--vscode-font-family);
   border-radius: 2px;
   padding: 2px;
@@ -1091,7 +1078,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border, transparent);
   padding: 4px 6px;
-  font-size: var(--calcpad-font-size-md);
   font-family: var(--vscode-font-family);
   border-radius: 2px;
 }
@@ -1112,7 +1098,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   border: none;
   padding: 2px 4px;
   border-radius: 2px;
-  font-size: var(--calcpad-font-size-md);
   font-family: var(--vscode-editor-font-family, monospace);
   color: var(--vscode-textLink-foreground);
   cursor: pointer;
@@ -1130,7 +1115,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
 
 .unused-badge {
   flex: 0 0 auto;
-  font-size: var(--calcpad-font-size-xs);
   padding: 1px 4px;
   border-radius: 2px;
   color: var(--vscode-editorWarning-foreground, #cca700);
@@ -1142,7 +1126,6 @@ watch([showUiOverrides, uiControlsResolved], ([shown, resolved]) => {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-foreground);
   margin-top: 8px;
 }

@@ -92,14 +92,14 @@ function getEmptyPreviewHtml(theme: 'light' | 'dark'): string {
     <meta charset="UTF-8">
     <title>CalcpadCE Preview</title>
     <style>
-        body { color: ${c.fg}; background: ${c.bg}; padding: 20px; font-family: var(--vscode-font-family, system-ui, sans-serif); }
-        h3 { text-align: center; }
+        body { color: ${c.fg}; background: ${c.bg}; padding: 20px; font: var(--vscode-font-size, 13px)/1.5 var(--vscode-font-family, system-ui, sans-serif); }
+        h3 { text-align: center; font-size: inherit; }
         p { text-align: center; }
-        table { margin: 1em auto; border-collapse: collapse; text-align: left; font-size: 0.9em; }
+        table { margin: 1em auto; border-collapse: collapse; text-align: left; }
         th, td { padding: 4px 12px; }
         th { text-align: right; font-weight: normal; opacity: 0.7; }
         td { font-family: var(--vscode-editor-font-family, monospace); }
-        h4 { text-align: center; margin-top: 1.5em; margin-bottom: 0.3em; }
+        h4 { text-align: center; font-size: inherit; margin-top: 1.5em; margin-bottom: 0.3em; }
         a { color: ${c.link}; }
     </style>
 </head>
@@ -3022,7 +3022,7 @@ bootstrap().catch((err) => {
     panel.setAttribute('style', [
         'position:fixed', 'inset:0', 'margin:0', 'padding:24px',
         'background:#1e1e1e', 'color:#f48771',
-        'font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace',
+        'font-family:ui-monospace,SFMono-Regular,Menlo,monospace', 'line-height:1.5',
         'white-space:pre-wrap', 'overflow:auto', 'z-index:2147483647',
     ].join(';'));
     panel.textContent = `CalcpadCE failed to start.\n\n${detail}`;

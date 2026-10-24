@@ -102,13 +102,11 @@ function onPrettify() {
 
 .section-title {
   margin: 0 0 8px 0;
-  font-size: var(--calcpad-font-size-lg);
   font-weight: 600;
   color: var(--vscode-foreground);
 }
 
 .section-desc {
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-descriptionForeground);
   margin: 0 0 16px 0;
   line-height: 1.5;
@@ -118,7 +116,6 @@ function onPrettify() {
   background: var(--vscode-textCodeBlock-background);
   padding: 1px 4px;
   border-radius: 2px;
-  font-size: var(--calcpad-font-size-sm);
 }
 
 .actions {

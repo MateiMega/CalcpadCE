@@ -35,7 +35,6 @@ select {
     border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
     border-radius: 2px;
     padding: 2px 6px;
-    font-size: var(--calcpad-font-size-md);
     cursor: pointer;
 }
 select:focus {
@@ -111,7 +110,6 @@ select option {
 
 .status-bar .status-server {
     padding: 1px 8px;
-    font-size: var(--calcpad-font-size-md);
     background: rgba(0, 0, 0, 0.35);
     border-radius: 2px;
     -webkit-user-select: none;
@@ -135,7 +133,6 @@ select option {
     color: var(--vscode-button-secondaryForeground, #ccc);
     border: none;
     padding: 2px 8px;
-    font-size: var(--calcpad-font-size-sm);
     cursor: pointer;
     border-radius: 2px;
 }
@@ -253,7 +250,6 @@ select option {
     border: none;
     border-left: 1px solid var(--vscode-tab-border, #252526);
     cursor: pointer;
-    font-size: var(--calcpad-font-size-sm);
 }
 .group-close:hover {
     background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
@@ -295,7 +291,6 @@ select option {
     gap: 14px;
     background: rgba(255, 255, 255, 0.7);
     color: #333;
-    font-size: var(--calcpad-font-size-lg);
     pointer-events: none;
 }
 .preview-loading-overlay.preview-dark {
@@ -319,7 +314,6 @@ select option {
 }
 
 .panel-scope {
-    font-size: var(--calcpad-font-size-xs);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--vscode-descriptionForeground, #888);
@@ -377,7 +371,6 @@ select option {
     color: var(--vscode-tab-inactiveForeground, #969696);
     border-right: 1px solid var(--vscode-tab-border, #252526);
     cursor: pointer;
-    font-size: var(--calcpad-font-size-lg);
     white-space: nowrap;
     max-width: 240px;
     flex-shrink: 0;
@@ -407,7 +400,6 @@ button.tab-close {
     margin-left: 2px;
     color: inherit;
     border-radius: 3px;
-    font-size: var(--calcpad-font-size-sm);
     line-height: 1;
 }
 
@@ -424,14 +416,14 @@ button.tab-close:hover {
     height: 18px;
     margin-right: 4px;
     color: var(--vscode-tab-activeForeground, #ffffff);
-    font-size: var(--calcpad-font-size-xs);
+    font-size: var(--calcpad-font-size-icon-small);
     line-height: 1;
     pointer-events: none;
 }
 
 button.tab-new {
     font-family: revert;
-    font-size: var(--calcpad-font-size-xl);
+    font-size: var(--calcpad-font-size-icon-large);
 }
 
 button.tab-new:hover {
@@ -539,7 +531,7 @@ button.tab-new:hover {
     background: var(--vscode-toolbar-hoverBackground, #2a2d2e);
 }
 .sidebar-rail-icon {
-    font-size: var(--calcpad-font-size-lg);
+    font-size: var(--calcpad-font-size-icon-large);
     line-height: 1;
 }
 .sidebar-rail.collapsed {
@@ -649,7 +641,6 @@ button.tab-new:hover {
 .preview-find-input {
     width: 180px;
     padding: 3px 6px;
-    font-size: var(--calcpad-font-size-md);
     background: var(--vscode-input-background, #3c3c3c);
     color: var(--vscode-input-foreground, #cccccc);
     border: 1px solid var(--vscode-input-border, transparent);
@@ -664,7 +655,6 @@ button.tab-new:hover {
 .preview-find-count {
     min-width: 34px;
     text-align: center;
-    font-size: var(--calcpad-font-size-sm);
     opacity: 0.8;
 }
 
@@ -675,7 +665,6 @@ button.tab-new:hover {
     border: none;
     border-radius: 2px;
     cursor: pointer;
-    font-size: var(--calcpad-font-size-md);
     line-height: 1;
 }
 
@@ -695,7 +684,6 @@ button.tab-new:hover {
     padding-inline-start: 12px;
     background: var(--vscode-titleBar-activeBackground, #3c3c3c);
     border-bottom: 1px solid var(--vscode-widget-border);
-    font-size: var(--calcpad-font-size-md);
     min-height: 30px;
 }
 
@@ -753,7 +741,6 @@ button.tab-new:hover {
     border: none;
     border-bottom: 2px solid transparent;
     color: var(--vscode-panelTitle-inactiveForeground, #888);
-    font-size: var(--calcpad-font-size-sm);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 6px 8px;
@@ -773,7 +760,6 @@ button.tab-new:hover {
     background: var(--vscode-dropdown-background, #3c3c3c);
     color: var(--vscode-dropdown-foreground, #cccccc);
     border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
-    font-size: var(--calcpad-font-size-sm);
     padding: 2px 6px;
     margin-left: 8px;
     border-radius: 2px;
@@ -801,7 +787,6 @@ button.tab-new:hover {
     border-radius: 4px;
     padding: 16px 18px 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-    font-size: var(--calcpad-font-size-lg);
 }
 .modal-title {
     font-weight: 600;
@@ -815,7 +800,6 @@ button.tab-new:hover {
    stretch the dialog, and keep it visually separate from our own wording. */
 .modal-url {
     font-family: var(--vscode-editor-font-family, monospace);
-    font-size: var(--calcpad-font-size-md);
     background: var(--vscode-editor-background, #1e1e1e);
     border: 1px solid var(--vscode-widget-border, #474747);
     border-radius: 3px;
@@ -837,7 +821,6 @@ button.modal-btn {
     padding: 4px 12px;
     border-radius: 2px;
     cursor: pointer;
-    font-size: var(--calcpad-font-size-md);
 }
 .quick-pick-list {
     display: flex;
@@ -858,17 +841,12 @@ button.modal-btn {
     background: var(--vscode-list-hoverBackground, #2a2d2e);
     border-color: var(--vscode-focusBorder, #007fd4);
 }
-.quick-pick-option-label {
-    font-size: var(--calcpad-font-size-md);
-}
 .quick-pick-option-detail {
-    font-size: var(--calcpad-font-size-sm);
     color: var(--vscode-descriptionForeground, #858585);
     margin-top: 2px;
 }
 
 .problems-badge {
-    font-size: var(--calcpad-font-size-xs);
     padding: 0 5px;
     border-radius: 8px;
     min-width: 18px;
@@ -895,7 +873,6 @@ button.modal-btn {
     flex: 1;
     overflow-y: auto;
     font-family: var(--vscode-editor-font-family, 'Cascadia Code', Consolas, monospace);
-    font-size: var(--calcpad-font-size-md);
 }
 
 .problem-row {
@@ -916,7 +893,6 @@ button.modal-btn {
     flex-shrink: 0;
     width: 16px;
     text-align: center;
-    font-size: var(--calcpad-font-size-md);
 }
 
 .problem-icon.lintError {
@@ -941,13 +917,11 @@ button.modal-btn {
 .problem-code {
     flex-shrink: 0;
     color: var(--vscode-descriptionForeground, #888);
-    font-size: var(--calcpad-font-size-sm);
 }
 
 .problem-location {
     flex-shrink: 0;
     color: var(--vscode-descriptionForeground, #888);
-    font-size: var(--calcpad-font-size-sm);
 }
 
 .problems-empty {
@@ -962,7 +936,6 @@ button.modal-btn {
     flex: 1;
     overflow-y: auto;
     font-family: var(--vscode-editor-font-family, 'Cascadia Code', Consolas, monospace);
-    font-size: var(--calcpad-font-size-md);
 }
 
 .output-row {
@@ -1018,7 +991,6 @@ button.modal-btn {
     height: 22px;
     background: var(--vscode-statusBar-background, #007acc);
     color: var(--vscode-statusBar-foreground, #fff);
-    font-size: var(--calcpad-font-size-md);
     cursor: pointer;
     -webkit-user-select: none;
     user-select: none;
@@ -1063,6 +1035,5 @@ button.modal-btn {
 }
 
 .status-text {
-    font-size: var(--calcpad-font-size-sm);
     opacity: 0.8;
 }
