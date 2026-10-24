@@ -575,7 +575,6 @@ watch(
 
 .symbols-palette-arrow {
   display: inline-block;
-  font-size: var(--calcpad-font-size-icon-small);
   transition: transform 0.2s ease;
 }
 
