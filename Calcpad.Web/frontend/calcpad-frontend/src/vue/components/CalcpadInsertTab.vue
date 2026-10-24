@@ -24,13 +24,13 @@
 
       <!-- Symbols Palette -->
       <div v-if="!searchQuery && symbolGroups.length > 0" class="symbols-palette">
-        <div class="symbols-palette-header" title="Symbol Palette" @click="symbolsPaletteOpen = !symbolsPaletteOpen">
-          <span class="symbols-palette-arrow" :class="{ open: symbolsPaletteOpen }">&#x25B6;</span>
+        <div class="symbols-palette-header" title="Symbol Palette" @click="panelState.symbolsPaletteOpen = !panelState.symbolsPaletteOpen">
+          <span class="symbols-palette-arrow" :class="{ open: panelState.symbolsPaletteOpen }">&#x25B6;</span>
           <span class="symbols-palette-title" aria-label="Symbol Palette">
             Symbols: <span class="symbols-palette-examples">α β π Δ Ω x̄ ẋ °</span>
           </span>
         </div>
-        <div v-show="symbolsPaletteOpen" class="symbols-palette-body">
+        <div v-show="panelState.symbolsPaletteOpen" class="symbols-palette-body">
           <div v-for="group in symbolGroups" :key="group.name" class="symbol-group">
             <div class="symbol-group-header" :title="group.name" @click="toggleGroup(group.name)">
               <span class="symbol-group-arrow" :class="{ open: isGroupOpen(group.name) }">&#x25B6;</span>
@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import CalcpadSearchField from './CalcpadSearchField.vue'
 import CalcpadSearchHighlight from './CalcpadSearchHighlight.vue'
 import CollapseAllButton from './CollapseAllButton.vue'
@@ -119,19 +119,28 @@ const searchField = ref<InstanceType<typeof CalcpadSearchField> | null>(null)
 const searchResults = ref<HTMLSelectElement | null>(null)
 const selectedResultIndex = ref(-1)
 const searchQuery = computed(() => searchTerm.value.trim())
-const symbolsPaletteOpen = ref(false)
 defineExpose({ focusSearch: () => searchField.value!.focus() })
-// All symbol groups start collapsed; users open them on demand.
-const openSymbolGroups = ref<Set<string>>(new Set())
+
+const STORAGE_KEY = 'calcpad.insert.panels'
+const panelState = reactive({
+  symbolsPaletteOpen: false,
+  openSymbolGroups: [] as string[],
+  openCategories: [] as string[]
+})
+Object.assign(panelState, JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}'))
+
+watch(panelState, () => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(panelState))
+}, { flush: 'sync' })
 
 const toggleGroup = (name: string) => {
-  const next = new Set(openSymbolGroups.value)
+  const next = new Set(panelState.openSymbolGroups)
   if (next.has(name)) next.delete(name)
   else next.add(name)
-  openSymbolGroups.value = next
+  panelState.openSymbolGroups = [...next]
 }
 
-const isGroupOpen = (name: string): boolean => openSymbolGroups.value.has(name)
+const isGroupOpen = (name: string): boolean => panelState.openSymbolGroups.includes(name)
 
 // Symbol palette helpers
 interface SymbolGroup {
@@ -396,8 +405,9 @@ const insertItem = (item: InsertItem) => {
 }
 
 const collapseAll = () => {
-  symbolsPaletteOpen.value = false
-  openSymbolGroups.value.clear()
+  panelState.symbolsPaletteOpen = false
+  panelState.openSymbolGroups = []
+  panelState.openCategories = []
   const checkboxes = document.querySelectorAll('#tree-container input[type="checkbox"]')
   checkboxes.forEach(checkbox => {
     (checkbox as HTMLInputElement).checked = false
@@ -424,14 +434,15 @@ const buildTreeStructure = () => {
   buildTreeStructureRecursive(treeData, treeRoot, 0)
 }
 
-const buildTreeStructureRecursive = (data: TreeNode, parentUl: HTMLUListElement, level: number) => {
+const buildTreeStructureRecursive = (data: TreeNode, parentUl: HTMLUListElement, level: number, parentPath: string[] = []) => {
   if (level >= 5) return // Prevent infinite recursion
 
   Object.keys(data).forEach(categoryKey => {
     const categoryData = data[categoryKey]
+    const categoryPath = [...parentPath, categoryKey]
 
     if (Array.isArray(categoryData)) {
-      const { li, ul } = createTreeSection(categoryKey, level)
+      const { li, ul } = createTreeSection(categoryKey, level, categoryPath)
 
       categoryData.forEach((item: InsertItem) => {
         const itemLi = createTreeItem(item)
@@ -440,14 +451,15 @@ const buildTreeStructureRecursive = (data: TreeNode, parentUl: HTMLUListElement,
 
       parentUl.appendChild(li)
     } else if (typeof categoryData === 'object' && categoryData !== null) {
-      const { li, ul } = createTreeSection(categoryKey, level)
-      buildTreeStructureRecursive(categoryData as TreeNode, ul, level + 1)
+      const { li, ul } = createTreeSection(categoryKey, level, categoryPath)
+      buildTreeStructureRecursive(categoryData as TreeNode, ul, level + 1, categoryPath)
       parentUl.appendChild(li)
     }
   })
 }
 
-const createTreeSection = (title: string, level: number) => {
+const createTreeSection = (title: string, level: number, categoryPath: string[]) => {
+  const categoryId = categoryPath.join(' > ')
   const checkboxId = 'checkbox-' + Date.now() + '-' + Math.random()
   const levelClass = level > 0 ? ' level-' + level : ''
 
@@ -457,7 +469,7 @@ const createTreeSection = (title: string, level: number) => {
   const checkbox = document.createElement('input')
   checkbox.type = 'checkbox'
   checkbox.id = checkboxId
-  checkbox.checked = false // Default to collapsed
+  checkbox.checked = panelState.openCategories.includes(categoryId)
 
   const label = document.createElement('label')
   label.setAttribute('for', checkboxId)
@@ -467,6 +479,10 @@ const createTreeSection = (title: string, level: number) => {
   label.addEventListener('click', (e) => {
     e.preventDefault()
     checkbox.checked = !checkbox.checked
+    const next = new Set(panelState.openCategories)
+    if (checkbox.checked) next.add(categoryId)
+    else next.delete(categoryId)
+    panelState.openCategories = [...next]
   })
 
   const ul = document.createElement('ul')
