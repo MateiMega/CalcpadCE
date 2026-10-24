@@ -9,7 +9,8 @@
     >
       <span v-if="node.isDirectory" class="tree-arrow" :class="{ open: isExpanded }">&#x25B6;</span>
       <span v-else class="tree-arrow-spacer"></span>
-      <span class="tree-icon">{{ node.isDirectory ? '📁' : '📄' }}</span>
+      <img v-if="isCalcpadFile" class="tree-icon" :src="CALCPAD_ICON_URL" width="16" height="16" alt="" />
+      <span v-else class="tree-icon">{{ node.isDirectory ? '📁' : '📄' }}</span>
       <span class="tree-label" :title="node.path">{{ node.name }}</span>
     </div>
     <div v-if="node.isDirectory && isExpanded && node.children && node.children.length > 0">
@@ -29,6 +30,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { CALCPAD_ICON_URL } from '../calcpad-icon'
 import type { FileNode } from '../types'
 
 interface Props {
@@ -51,6 +53,7 @@ const emit = defineEmits<{
   'context-menu': [payload: ContextMenuPayload]
 }>()
 
+const isCalcpadFile = computed(() => !props.node.isDirectory && props.node.name.toLowerCase().endsWith('.cpd'))
 const isExpanded = computed(() => props.expandedPaths.includes(props.node.path))
 
 const handleClick = () => {

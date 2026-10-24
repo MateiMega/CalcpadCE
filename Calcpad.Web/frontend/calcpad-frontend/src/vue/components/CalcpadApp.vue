@@ -225,6 +225,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import CalcpadInsertTab from './CalcpadInsertTab.vue'
 import SidebarIcon from './SidebarIcon.vue'
+import { CALCPAD_ICON } from '../calcpad-icon'
 import CalcpadTocTab from './CalcpadTocTab.vue'
 import CalcpadSettingsTab from './CalcpadSettingsTab.vue'
 import CalcpadVariablesTab from './CalcpadVariablesTab.vue'
@@ -265,10 +266,6 @@ const props = withDefaults(defineProps<Props>(), {
 // Icons are inline SVGs so no external asset dependencies.
 interface ViewDef { id: string; label: string; icon: string }
 const FOLDER_ICON = '<svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 3H7.71l-.85-.85L6.51 2h-5l-.5.5v11l.5.5h13l.5-.5v-10L14.5 3zm-.5 10H2V3h4.29l.85.85.35.15H14v9z"/></svg>'
-// CalcpadCE brand logo (from docs/media/logo.svg): blue starburst with yellow
-// diagonal + central hole. Kept in its native colors so the branding stays
-// recognizable in the activity bar.
-const CALCPAD_ICON = '<svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cp-icon-gradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#23A9F2"/><stop offset="100%" stop-color="#006DB0"/></linearGradient><mask id="cp-icon-hole"><rect width="100" height="100" fill="white"/><circle cx="50" cy="50" r="9" fill="black"/></mask></defs><path d="M 50 20 L 80 50" stroke="#FFC107" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="M 17 17 Q 50 42 83 17 Q 58 50 83 83 Q 50 58 17 83 Q 42 50 17 17 Z" mask="url(#cp-icon-hole)" fill="url(#cp-icon-gradient)" stroke="url(#cp-icon-gradient)" stroke-width="3" stroke-linejoin="round"/><path d="M 80 50 L 50 80" stroke="#FFC107" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 const views: ViewDef[] = [
   { id: 'files', label: 'Files', icon: FOLDER_ICON },
   { id: 'calcpad', label: 'CalcpadCE', icon: CALCPAD_ICON }
