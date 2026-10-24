@@ -26,6 +26,13 @@ body {
   user-select: none;
 }
 
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
 .monaco-editor,
 .preview-pane,
 input,
@@ -415,7 +422,6 @@ select,
   border: none;
   cursor: pointer;
   font-size: var(--calcpad-font-size-md);
-  font-family: inherit;
 }
 
 .calcpad-context-item:hover {
@@ -430,7 +436,6 @@ button {
   justify-content: center;
   cursor: pointer;
   font-size: var(--calcpad-font-size-sm);
-  font-family: var(--vscode-font-family);
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
