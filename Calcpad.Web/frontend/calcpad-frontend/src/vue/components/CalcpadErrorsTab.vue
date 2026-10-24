@@ -29,10 +29,10 @@
     >
       <button
         v-if="contextMenu.error"
-        class="calcpad-context-item"
+        class="context-menu"
         @click="onCopyError"
       >Copy</button>
-      <button class="calcpad-context-item" @click="onCopyAllErrors">Copy All</button>
+      <button class="context-menu" @click="onCopyAllErrors">Copy All</button>
     </div>
   </div>
 </template>
@@ -135,7 +135,6 @@ const onCopyAllErrors = () => {
   padding: 6px 8px;
   border-radius: 3px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-md);
   color: var(--vscode-foreground);
 }
 
@@ -149,7 +148,6 @@ const onCopyAllErrors = () => {
 }
 
 .error-source {
-  font-size: var(--calcpad-font-size-xs);
   color: var(--vscode-badge-foreground, var(--vscode-foreground));
   background: var(--vscode-badge-background);
   padding: 1px 4px;
@@ -162,7 +160,6 @@ const onCopyAllErrors = () => {
 }
 
 .error-location {
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-foreground);
   opacity: 0.7;
   white-space: nowrap;

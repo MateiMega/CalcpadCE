@@ -1,5 +1,5 @@
 <template>
-  <div class="insert-tab" :class="{ searching: searchQuery }">
+  <div class="insert-tab">
     <CalcpadSearchField
       ref="searchField"
       v-model="searchTerm"
@@ -10,80 +10,82 @@
       @keydown.up.exact="enterResults($event, filteredItems.length - 1)"
     />
 
-    <div v-if="!searchQuery" class="insert-actions">
-      <button @click="insertImage" class="icon" title="Insert an image from file" aria-label="Insert an image from file">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
-          <rect x="2" y="2" width="12" height="12" rx="1" />
-          <circle cx="5.5" cy="5.5" r="1.5" />
-          <path d="m14 12-4-4-3 3-2-2-3 3" />
-        </svg>
-      </button>
-      <CollapseAllButton v-if="displayItems.length > 0" @click="collapseAll" />
-    </div>
-
-    <!-- Symbols Palette -->
-    <div v-if="!searchQuery && symbolGroups.length > 0" class="symbols-palette">
-      <div class="symbols-palette-header" title="Symbol Palette" @click="symbolsPaletteOpen = !symbolsPaletteOpen">
-        <span class="symbols-palette-arrow" :class="{ open: symbolsPaletteOpen }">&#x25B6;</span>
-        <span class="symbols-palette-title" aria-label="Symbol Palette">
-          Symbols: <span class="symbols-palette-examples">α β π Δ Ω x̄ ẋ °</span>
-        </span>
+    <div class="insert-scroll-container">
+      <div v-if="!searchQuery" class="insert-actions">
+        <button @click="insertImage" class="icon" title="Insert an image from file" aria-label="Insert an image from file">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+            <rect x="2" y="2" width="12" height="12" rx="1" />
+            <circle cx="5.5" cy="5.5" r="1.5" />
+            <path d="m14 12-4-4-3 3-2-2-3 3" />
+          </svg>
+        </button>
+        <CollapseAllButton v-if="displayItems.length > 0" @click="collapseAll" />
       </div>
-      <div v-show="symbolsPaletteOpen" class="symbols-palette-body">
-        <div v-for="group in symbolGroups" :key="group.name" class="symbol-group">
-          <div class="symbol-group-header" :title="group.name" @click="toggleGroup(group.name)">
-            <span class="symbol-group-arrow" :class="{ open: isGroupOpen(group.name) }">&#x25B6;</span>
-            <span class="symbol-group-label" :aria-label="group.name">{{ group.preview }}</span>
-          </div>
-          <div v-show="isGroupOpen(group.name)" class="symbol-grid">
-            <button
-              v-for="item in group.items"
-              :key="itemKeys.get(item)"
-              class="symbol-btn"
-              :title="buildTooltip(item)"
-              @click="insertItem(item)"
-            >
-              {{ item.tag }}
-            </button>
+
+      <!-- Symbols Palette -->
+      <div v-if="!searchQuery && symbolGroups.length > 0" class="symbols-palette">
+        <div class="symbols-palette-header" title="Symbol Palette" @click="symbolsPaletteOpen = !symbolsPaletteOpen">
+          <span class="symbols-palette-arrow" :class="{ open: symbolsPaletteOpen }">&#x25B6;</span>
+          <span class="symbols-palette-title" aria-label="Symbol Palette">
+            Symbols: <span class="symbols-palette-examples">α β π Δ Ω x̄ ẋ °</span>
+          </span>
+        </div>
+        <div v-show="symbolsPaletteOpen" class="symbols-palette-body">
+          <div v-for="group in symbolGroups" :key="group.name" class="symbol-group">
+            <div class="symbol-group-header" :title="group.name" @click="toggleGroup(group.name)">
+              <span class="symbol-group-arrow" :class="{ open: isGroupOpen(group.name) }">&#x25B6;</span>
+              <span class="symbol-group-label" :aria-label="group.name">{{ group.preview }}</span>
+            </div>
+            <div v-show="isGroupOpen(group.name)" class="symbol-grid">
+              <button
+                v-for="item in group.items"
+                :key="itemKeys.get(item)"
+                class="symbol-btn"
+                :title="buildTooltip(item)"
+                @click="insertItem(item)"
+              >
+                {{ item.tag }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="searchQuery && filteredItems.length === 0" class="no-items">
-      No items found for "{{ searchQuery }}"
-    </div>
-    <div v-else-if="displayItems.length === 0" class="no-items">
-      No insert items available
-    </div>
-    <select
-      v-else-if="searchQuery"
-      ref="searchResults"
-      v-model="selectedResultIndex"
-      :size="Math.max(2, displayItems.length)"
-      class="insert-results"
-      aria-label="Insert search results"
-      @keydown.enter.prevent.stop="!$event.repeat && insertSelectedResult()"
-    >
-      <option
-        v-for="(item, index) in displayItems"
-        :key="itemKeys.get(item)"
-        :value="index"
-        @focus="selectedResultIndex = index"
-        @click.prevent="selectedResultIndex = index"
-        @dblclick.prevent="insertItem(item)"
-        :title="buildTooltip(item)"
+      <div v-if="searchQuery && filteredItems.length === 0" class="no-items">
+        No items found for "{{ searchQuery }}"
+      </div>
+      <div v-else-if="displayItems.length === 0" class="no-items">
+        No insert items available
+      </div>
+      <select
+        v-else-if="searchQuery"
+        ref="searchResults"
+        v-model="selectedResultIndex"
+        :size="Math.max(2, displayItems.length)"
+        class="insert-results"
+        aria-label="Insert search results"
+        @keydown.enter.prevent.stop="!$event.repeat && insertSelectedResult()"
       >
-        <CalcpadSearchHighlight class="item-display" :text="formatDisplayText(item)" :query="searchQuery" />
-        <CalcpadSearchHighlight v-if="formatSecondaryText(item)" class="item-description" :text="formatSecondaryText(item)" :query="searchQuery" />
-        <CalcpadSearchHighlight v-if="item.categoryPath" class="item-category" :text="item.categoryPath" :query="searchQuery" />
-      </option>
-    </select>
-    <div v-else>
-      <div id="tree-container">
-        <!-- Tree structure will be built here -->
-        <div class="tree-placeholder">
-          Loading insert items...
+        <option
+          v-for="(item, index) in displayItems"
+          :key="itemKeys.get(item)"
+          :value="index"
+          @focus="selectedResultIndex = index"
+          @click.prevent="selectedResultIndex = index"
+          @dblclick.prevent="insertItem(item)"
+          :title="buildTooltip(item)"
+        >
+          <CalcpadSearchHighlight class="item-display" :text="formatDisplayText(item)" :query="searchQuery" />
+          <CalcpadSearchHighlight v-if="formatSecondaryText(item)" class="item-description" :text="formatSecondaryText(item)" :query="searchQuery" />
+          <CalcpadSearchHighlight v-if="item.categoryPath" class="item-category" :text="item.categoryPath" :query="searchQuery" />
+        </option>
+      </select>
+      <div v-else>
+        <div id="tree-container">
+          <!-- Tree structure will be built here -->
+          <div class="tree-placeholder">
+            Loading insert items...
+          </div>
         </div>
       </div>
     </div>
@@ -523,18 +525,25 @@ watch(
 
 <style scoped>
 .insert-tab {
-  padding: 12px;
-}
-
-.insert-tab.searching {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .search-container {
   flex-shrink: 0;
-  margin-bottom: 12px;
+  margin: 12px;
+}
+
+.insert-scroll-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 12px;
 }
 
 /* Symbols Palette */
@@ -553,7 +562,6 @@ watch(
   cursor: pointer;
   background: var(--vscode-sideBar-background);
   font-weight: bold;
-  font-size: var(--calcpad-font-size-sm);
   user-select: none;
 }
 
@@ -562,12 +570,11 @@ watch(
 }
 
 .symbols-palette-examples {
-  font-size: var(--calcpad-font-size-lg);
+  font-size: var(--calcpad-font-size-icon-large);
 }
 
 .symbols-palette-arrow {
   display: inline-block;
-  font-size: var(--calcpad-font-size-xxs);
   transition: transform 0.2s ease;
 }
 
@@ -590,7 +597,6 @@ watch(
   padding: 3px 6px;
   cursor: pointer;
   user-select: none;
-  font-size: var(--calcpad-font-size-sm);
   font-weight: 600;
   color: var(--vscode-descriptionForeground);
 }
@@ -601,7 +607,7 @@ watch(
 
 .symbol-group-arrow {
   display: inline-block;
-  font-size: var(--calcpad-font-size-xxs);
+  font-size: var(--calcpad-font-size-icon-small);
   transition: transform 0.2s ease;
 }
 
@@ -611,7 +617,7 @@ watch(
 
 .symbol-group-label {
   flex: 1;
-  font-size: var(--calcpad-font-size-lg);
+  font-size: var(--calcpad-font-size-icon-large);
   font-weight: normal;
   color: var(--vscode-editor-foreground);
 }
@@ -634,7 +640,7 @@ watch(
   border: 1px solid var(--vscode-widget-border);
   border-radius: 2px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-lg);
+  font-size: var(--calcpad-font-size-icon-large);
   color: var(--vscode-editor-foreground);
   line-height: 1;
 }
@@ -662,10 +668,9 @@ watch(
   appearance: base-select;
   display: block;
   overflow: visible;
-  flex: none;
   height: max-content;
   width: 100%;
-  padding: 0 0 12px;
+  padding: 0;
   border: none;
   color: inherit;
   background: transparent;
@@ -712,18 +717,15 @@ watch(
 .item-display {
   font-weight: bold;
   color: var(--vscode-editor-foreground);
-  font-size: var(--calcpad-font-size-md);
   font-family: monospace;
 }
 
 .item-description {
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-descriptionForeground);
   margin-top: 2px;
 }
 
 .item-category {
-  font-size: var(--calcpad-font-size-xs);
   color: var(--vscode-descriptionForeground);
   margin-top: 2px;
   opacity: 0.7;
@@ -759,7 +761,6 @@ watch(
   border: 1px solid var(--vscode-widget-border);
   border-radius: 3px;
   font-weight: bold;
-  font-size: var(--calcpad-font-size-sm);
   position: relative;
 }
 
@@ -794,7 +795,6 @@ watch(
   border: 1px solid var(--vscode-widget-border);
   border-radius: 2px;
   cursor: pointer;
-  font-size: var(--calcpad-font-size-sm);
   color: var(--vscode-editor-foreground);
   text-align: left;
 }

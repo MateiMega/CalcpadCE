@@ -74,7 +74,6 @@ const clearSearch = () => {
   border: 1px solid var(--vscode-input-border);
   color: var(--vscode-input-foreground);
   border-radius: 3px;
-  font-size: var(--calcpad-font-size-md);
   font-family: var(--vscode-font-family);
 }
 

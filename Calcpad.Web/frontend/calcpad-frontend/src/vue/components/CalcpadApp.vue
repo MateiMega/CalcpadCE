@@ -82,7 +82,7 @@
 
     <!-- `inert` rather than a per-control disabled flag: it takes the whole tab out of
          both pointer and keyboard reach in one attribute, whatever it holds. -->
-    <div class="tab-content" :class="{ unavailable: tabUnavailable(pane.activeTab) }" :inert="tabUnavailable(pane.activeTab)">
+    <div class="tab-content" :class="{ unavailable: tabUnavailable(pane.activeTab), 'insert-content': pane.activeTab === 'insert' }" :inert="tabUnavailable(pane.activeTab)">
       <CalcpadInsertTab
         v-if="pane.activeTab === 'insert'"
         :ref="el => { if (paneIndex === 0) insertTab = el as InstanceType<typeof CalcpadInsertTab> | null }"
@@ -225,6 +225,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import CalcpadInsertTab from './CalcpadInsertTab.vue'
 import SidebarIcon from './SidebarIcon.vue'
+import { CALCPAD_ICON } from '../calcpad-icon'
 import CalcpadTocTab from './CalcpadTocTab.vue'
 import CalcpadSettingsTab from './CalcpadSettingsTab.vue'
 import CalcpadVariablesTab from './CalcpadVariablesTab.vue'
@@ -265,10 +266,6 @@ const props = withDefaults(defineProps<Props>(), {
 // Icons are inline SVGs so no external asset dependencies.
 interface ViewDef { id: string; label: string; icon: string }
 const FOLDER_ICON = '<svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 3H7.71l-.85-.85L6.51 2h-5l-.5.5v11l.5.5h13l.5-.5v-10L14.5 3zm-.5 10H2V3h4.29l.85.85.35.15H14v9z"/></svg>'
-// CalcpadCE brand logo (from docs/media/logo.svg): blue starburst with yellow
-// diagonal + central hole. Kept in its native colors so the branding stays
-// recognizable in the activity bar.
-const CALCPAD_ICON = '<svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cp-icon-gradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#23A9F2"/><stop offset="100%" stop-color="#006DB0"/></linearGradient><mask id="cp-icon-hole"><rect width="100" height="100" fill="white"/><circle cx="50" cy="50" r="9" fill="black"/></mask></defs><path d="M 50 20 L 80 50" stroke="#FFC107" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="M 17 17 Q 50 42 83 17 Q 58 50 83 83 Q 50 58 17 83 Q 42 50 17 17 Z" mask="url(#cp-icon-hole)" fill="url(#cp-icon-gradient)" stroke="url(#cp-icon-gradient)" stroke-width="3" stroke-linejoin="round"/><path d="M 80 50 L 50 80" stroke="#FFC107" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 const views: ViewDef[] = [
   { id: 'files', label: 'Files', icon: FOLDER_ICON },
   { id: 'calcpad', label: 'CalcpadCE', icon: CALCPAD_ICON }
@@ -999,7 +996,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   font-family: var(--vscode-font-family);
-  font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
 }
@@ -1092,24 +1088,24 @@ onUnmounted(() => {
 .tab {
   padding: 8px 12px;
   border: none;
+  border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--vscode-tab-inactiveForeground);
   cursor: pointer;
-  font-size: var(--calcpad-font-size-sm);
   font-weight: normal;
   border-radius: 0;
-  transition: all 0.2s ease;
-}
-
-.tab:hover {
-  background: var(--vscode-tab-hoverBackground);
-  color: var(--vscode-tab-activeForeground);
+  transition: background-color 0.2s ease, color 0.2s ease, border-bottom-color 0.2s ease;
 }
 
 .tab.active {
   background: var(--vscode-tab-activeBackground);
   color: var(--vscode-tab-activeForeground);
-  border-bottom: 2px solid var(--vscode-tab-activeBorder);
+  border-bottom-color: var(--vscode-tab-activeBorder);
+}
+
+.tab:hover {
+  background: var(--vscode-tab-hoverBackground);
+  color: var(--vscode-tab-activeForeground);
 }
 
 /* Still clickable while unavailable: opening the tab is how the note explaining
@@ -1141,12 +1137,16 @@ onUnmounted(() => {
   opacity: 0.45;
 }
 
+.tab-content.insert-content {
+  display: flex;
+  overflow: hidden;
+}
+
 /* Sits outside .tab-content so it stays legible while the tab itself is dimmed. */
 .unavailable-note {
   flex: 0 0 auto;
   margin: 0;
   padding: 8px 12px;
-  font-size: var(--calcpad-font-size-sm);
   font-style: italic;
   color: var(--vscode-descriptionForeground);
   border-bottom: 1px solid var(--vscode-widget-border);

@@ -918,7 +918,7 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
     <div id="app">
-        <div style="padding: 20px; text-align: center; color: var(--vscode-descriptionForeground); font-size: var(--calcpad-font-size-md);">
+        <div style="padding: 20px; text-align: center; color: var(--vscode-descriptionForeground);">
             Loading Vue.js CalcpadCE UI...
             <br><small>If this message persists, check the developer console for errors</small>
         </div>
