@@ -939,8 +939,8 @@ async function updatePreviewContent(panel: vscode.WebviewPanel, content: string,
                     p { text-align: center; }
                     table { margin: 1em auto; border-collapse: collapse; text-align: left; }
                     th, td { padding: 4px 12px; }
-                    th { text-align: right; font-weight: normal; opacity: 0.7; }
-                    td { font-family: var(--vscode-editor-font-family, monospace); }
+                    th { text-align: right; font-weight: normal; }
+                    kbd { font-family: var(--vscode-editor-font-family, monospace); font-size: inherit; padding: 1px 4px; border: 1px solid; border-radius: 3px; }
                     h4 { text-align: center; font-size: inherit; margin-top: 1.5em; margin-bottom: 0.3em; }
                     a { color: ${c.link}; }
                 </style>
@@ -950,17 +950,17 @@ async function updatePreviewContent(panel: vscode.WebviewPanel, content: string,
                 <p>Start typing to see the preview.</p>
                 <h4>Formatting Hotkeys</h4>
                 <table>
-                    <tr><th>Bold</th><td>Ctrl+B</td></tr>
-                    <tr><th>Italic</th><td>Ctrl+I</td></tr>
-                    <tr><th>Underline</th><td>Ctrl+U</td></tr>
-                    <tr><th>Subscript</th><td>Ctrl+=</td></tr>
-                    <tr><th>Superscript</th><td>Ctrl+Shift+=</td></tr>
-                    <tr><th>Heading 1-6</th><td>Ctrl+1 ... Ctrl+6</td></tr>
-                    <tr><th>Paragraph</th><td>Ctrl+L</td></tr>
-                    <tr><th>Line Break</th><td>Ctrl+R</td></tr>
-                    <tr><th>Bulleted List</th><td>Ctrl+Shift+L</td></tr>
-                    <tr><th>Numbered List</th><td>Ctrl+Shift+N</td></tr>
-                    <tr><th>Toggle Comment</th><td>Ctrl+Q</td></tr>
+                    <tr><th>Bold</th><td><kbd>Ctrl</kbd>+<kbd>B</kbd></td></tr>
+                    <tr><th>Italic</th><td><kbd>Ctrl</kbd>+<kbd>I</kbd></td></tr>
+                    <tr><th>Underline</th><td><kbd>Ctrl</kbd>+<kbd>U</kbd></td></tr>
+                    <tr><th>Subscript</th><td><kbd>Ctrl</kbd>+<kbd>=</kbd></td></tr>
+                    <tr><th>Superscript</th><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>=</kbd></td></tr>
+                    <tr><th>Heading 1-6</th><td><kbd>Ctrl</kbd>+<kbd>1</kbd> ... <kbd>Ctrl</kbd>+<kbd>6</kbd></td></tr>
+                    <tr><th>Paragraph</th><td><kbd>Ctrl</kbd>+<kbd>L</kbd></td></tr>
+                    <tr><th>Line Break</th><td><kbd>Ctrl</kbd>+<kbd>R</kbd></td></tr>
+                    <tr><th>Bulleted List</th><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></td></tr>
+                    <tr><th>Numbered List</th><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd></td></tr>
+                    <tr><th>Toggle Comment</th><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td></tr>
                 </table>
                 <h4>Resources</h4>
                 <p><a href="https://github.com/imartincei/CalcpadCE">CalcpadCE on GitHub</a></p>
