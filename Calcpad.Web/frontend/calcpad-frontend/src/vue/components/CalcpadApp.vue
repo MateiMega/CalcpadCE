@@ -1092,13 +1092,14 @@ onUnmounted(() => {
 .tab {
   padding: 8px 12px;
   border: none;
+  border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--vscode-tab-inactiveForeground);
   cursor: pointer;
   font-size: var(--calcpad-font-size-sm);
   font-weight: normal;
   border-radius: 0;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-bottom-color 0.2s ease;
 }
 
 .tab:hover {
@@ -1109,7 +1110,7 @@ onUnmounted(() => {
 .tab.active {
   background: var(--vscode-tab-activeBackground);
   color: var(--vscode-tab-activeForeground);
-  border-bottom: 2px solid var(--vscode-tab-activeBorder);
+  border-bottom-color: var(--vscode-tab-activeBorder);
 }
 
 /* Still clickable while unavailable: opening the tab is how the note explaining
