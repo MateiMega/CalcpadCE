@@ -154,10 +154,10 @@
       @mousedown.stop
       @click.stop
     >
-      <button class="calcpad-context-item" @click="onCopyName">Copy Name</button>
+      <button class="context-menu" @click="onCopyName">Copy Name</button>
       <button
         v-if="contextMenu.definition"
-        class="calcpad-context-item"
+        class="context-menu"
         @click="onCopyDefinition"
       >Copy Definition</button>
     </div>

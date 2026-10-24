@@ -136,21 +136,21 @@
         @mousedown.stop
         @click.stop
       >
-        <button class="tab-context-item" @click="onContextClose">Close</button>
+        <button class="context-menu" @click="onContextClose">Close</button>
         <button
-          class="tab-context-item"
+          class="context-menu"
           @click="onContextCloseOthers"
         >Close Others</button>
-        <button class="tab-context-item" @click="onContextCloseAll">Close All</button>
+        <button class="context-menu" @click="onContextCloseAll">Close All</button>
         <template v-if="tabContextMenu.filePath">
           <div class="tab-context-sep" role="separator"></div>
-          <button class="tab-context-item" @click="onContextOpenContainingFolder">
+          <button class="context-menu" @click="onContextOpenContainingFolder">
             Open Containing Folder
           </button>
-          <button class="tab-context-item" @click="onContextCopyFullPath">
+          <button class="context-menu" @click="onContextCopyFullPath">
             Copy Full Path
           </button>
-          <button class="tab-context-item" @click="onContextCopyRelativePath">
+          <button class="context-menu" @click="onContextCopyRelativePath">
             Copy Relative Path
           </button>
         </template>
@@ -166,11 +166,11 @@
       >
         <button
           v-if="problemsContextMenu.problem"
-          class="tab-context-item"
+          class="context-menu"
           @click="onCopyProblem"
         >Copy</button>
         <button
-          class="tab-context-item"
+          class="context-menu"
           :disabled="problems.length === 0"
           @click="onCopyAllProblems"
         >Copy All</button>
@@ -186,11 +186,11 @@
       >
         <button
           v-if="outputContextMenu.line"
-          class="tab-context-item"
+          class="context-menu"
           @click="onCopyOutputLine"
         >Copy</button>
         <button
-          class="tab-context-item"
+          class="context-menu"
           :disabled="filteredOutputLines.length === 0"
           @click="onCopyAllOutput"
         >Copy All</button>
@@ -482,21 +482,21 @@
     >
       <button
         v-if="previewContextMenu.editable"
-        class="tab-context-item"
+        class="context-menu"
         @click="onPreviewClipboard('cut')"
       >Cut (Ctrl+X)</button>
       <button
-        class="tab-context-item"
+        class="context-menu"
         :disabled="!previewContextMenu.selection && !previewContextMenu.editable"
         @click="onPreviewClipboard('copy')"
       >Copy (Ctrl+C)</button>
       <button
         v-if="previewContextMenu.editable"
-        class="tab-context-item"
+        class="context-menu"
         @click="onPreviewClipboard('paste')"
       >Paste (Ctrl+V)</button>
-      <button class="tab-context-item" @click="onFindInPreview">Find… (Ctrl+F)</button>
-      <button v-if="onOpenFullHtmlRequest" class="tab-context-item" @click="onOpenFullHtml">Open Full HTML</button>
+      <button class="context-menu" @click="onFindInPreview">Find… (Ctrl+F)</button>
+      <button v-if="onOpenFullHtmlRequest" class="context-menu" @click="onOpenFullHtml">Open Full HTML</button>
     </div>
 
     <!-- HTML modal rather than a native dialog, for web/desktop consistency. -->

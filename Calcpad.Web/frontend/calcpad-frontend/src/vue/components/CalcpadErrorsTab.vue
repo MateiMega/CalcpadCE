@@ -29,10 +29,10 @@
     >
       <button
         v-if="contextMenu.error"
-        class="calcpad-context-item"
+        class="context-menu"
         @click="onCopyError"
       >Copy</button>
-      <button class="calcpad-context-item" @click="onCopyAllErrors">Copy All</button>
+      <button class="context-menu" @click="onCopyAllErrors">Copy All</button>
     </div>
   </div>
 </template>

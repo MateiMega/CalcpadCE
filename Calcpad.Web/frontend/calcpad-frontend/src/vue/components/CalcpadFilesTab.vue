@@ -49,13 +49,13 @@
       @mousedown.stop
       @click.stop
     >
-      <button class="calcpad-context-item" @click="onOpenContainingFolder">
+      <button class="context-menu" @click="onOpenContainingFolder">
         Open Containing Folder
       </button>
-      <button class="calcpad-context-item" @click="onCopyFullPath">
+      <button class="context-menu" @click="onCopyFullPath">
         Copy Full Path
       </button>
-      <button class="calcpad-context-item" @click="onCopyRelativePath">
+      <button class="context-menu" @click="onCopyRelativePath">
         Copy Relative Path
       </button>
     </div>
