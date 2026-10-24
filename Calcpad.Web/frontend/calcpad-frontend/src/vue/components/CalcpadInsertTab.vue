@@ -6,7 +6,7 @@
       class="search-container"
     />
 
-    <div v-if="!searchTerm" class="insert-actions">
+    <div v-if="!searchQuery" class="insert-actions">
       <button @click="insertImage" class="icon" title="Insert an image from file" aria-label="Insert an image from file">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
           <rect x="2" y="2" width="12" height="12" rx="1" />
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Symbols Palette -->
-    <div v-if="!searchTerm && symbolGroups.length > 0" class="symbols-palette">
+    <div v-if="!searchQuery && symbolGroups.length > 0" class="symbols-palette">
       <div class="symbols-palette-header" title="Symbol Palette" @click="symbolsPaletteOpen = !symbolsPaletteOpen">
         <span class="symbols-palette-arrow" :class="{ open: symbolsPaletteOpen }">&#x25B6;</span>
         <span class="symbols-palette-title" aria-label="Symbol Palette">
@@ -46,13 +46,13 @@
       </div>
     </div>
 
-    <div v-if="searchTerm && filteredItems.length === 0" class="no-items">
-      No items found for "{{ searchTerm }}"
+    <div v-if="searchQuery && filteredItems.length === 0" class="no-items">
+      No items found for "{{ searchQuery }}"
     </div>
     <div v-else-if="displayItems.length === 0" class="no-items">
       No insert items available
     </div>
-    <div v-else-if="searchTerm">
+    <div v-else-if="searchQuery">
       <div
         v-for="item in displayItems"
         :key="itemKeys.get(item)"
@@ -61,13 +61,13 @@
         :title="buildTooltip(item)"
       >
         <div class="item-display">
-          <CalcpadSearchHighlight :text="formatDisplayText(item)" :query="searchTerm" />
+          <CalcpadSearchHighlight :text="formatDisplayText(item)" :query="searchQuery" />
         </div>
         <div v-if="formatSecondaryText(item)" class="item-description">
-          <CalcpadSearchHighlight :text="formatSecondaryText(item)" :query="searchTerm" />
+          <CalcpadSearchHighlight :text="formatSecondaryText(item)" :query="searchQuery" />
         </div>
         <div v-if="item.categoryPath" class="item-category">
-          <CalcpadSearchHighlight :text="item.categoryPath" :query="searchTerm" />
+          <CalcpadSearchHighlight :text="item.categoryPath" :query="searchQuery" />
         </div>
       </div>
     </div>
@@ -105,6 +105,7 @@ const emit = defineEmits<{
 
 // State
 const searchTerm = ref('')
+const searchQuery = computed(() => searchTerm.value.trim())
 const symbolsPaletteOpen = ref(false)
 // All symbol groups start collapsed; users open them on demand.
 const openSymbolGroups = ref<Set<string>>(new Set())
@@ -154,28 +155,62 @@ const itemKeys = computed(() => new Map(
 ))
 
 const filteredItems = computed(() => {
-  if (!searchTerm.value.trim()) {
+  if (!searchQuery.value) {
     return []
   }
 
-  const term = searchTerm.value.toLowerCase()
+  const term = searchQuery.value.toLowerCase()
+  const scoreMatch = (text: string) => {
+    const normalizedText = text.toLowerCase()
+    let matchedCharacters = 0
+    let wordStart = 0
+    let position = normalizedText.indexOf(term)
+    while (position !== -1) {
+      matchedCharacters += term.length
+      if (!/[\p{L}\p{M}\p{N}_]$/u.test(normalizedText.slice(0, position))) {
+        wordStart = 1
+      }
+      position = normalizedText.indexOf(term, position + term.length)
+    }
+    return {
+      coverage: matchedCharacters ? matchedCharacters / normalizedText.length : 0,
+      wordStart
+    }
+  }
 
-  const itemMatches = props.insertItems.filter((item: InsertItem) =>
-    item.label?.toLowerCase().includes(term) ||
-    item.tag?.toLowerCase().includes(term) ||
-    item.description?.toLowerCase().includes(term)
-  )
-
-  const categoryMatches = props.insertItems.filter((item: InsertItem) =>
-    item.categoryPath?.toLowerCase().includes(term) &&
-    !itemMatches.includes(item)
-  )
-
-  return [...itemMatches, ...categoryMatches]
+  return props.insertItems
+    .map(item => ({
+      item,
+      titleScore: scoreMatch(formatTitleText(item)),
+      descriptionScore: scoreMatch(formatSecondaryText(item)),
+      categoryScore: scoreMatch(item.categoryPath ?? '')
+    }))
+    .filter(({ item, titleScore, descriptionScore, categoryScore }) =>
+      titleScore.coverage > 0 || descriptionScore.coverage > 0 || categoryScore.coverage > 0 ||
+      item.label?.toLowerCase().includes(term) ||
+      item.tag.toLowerCase().includes(term) ||
+      item.description?.toLowerCase().includes(term)
+    )
+    // In each field, prefer word-start matches, then higher coverage.
+    // Count matches without overlap; coverage is matched characters divided by field length.
+    // Move to the next field only on a tie:
+    // 1. Title.
+    // 2. Description.
+    // 3. Category.
+    // Keep the original order when all fields tie.
+    .sort((a, b) =>
+      b.titleScore.wordStart - a.titleScore.wordStart ||
+      b.titleScore.coverage - a.titleScore.coverage ||
+      b.descriptionScore.wordStart - a.descriptionScore.wordStart ||
+      b.descriptionScore.coverage - a.descriptionScore.coverage ||
+      b.categoryScore.wordStart - a.categoryScore.wordStart ||
+      b.categoryScore.coverage - a.categoryScore.coverage
+    )
+    .map(({ item }) => item)
 })
 
 const displayItems = computed(() => {
-  if (searchTerm.value.trim()) {
+  if (searchQuery.value) {
     return filteredItems.value
   }
   return props.insertItems
@@ -230,13 +265,16 @@ const MARKUP_CATEGORIES = new Set(['HTML', 'Metadata Properties', 'SVG', 'Markdo
 const isMarkupItem = (item: InsertItem): boolean =>
   MARKUP_CATEGORIES.has((item.categoryPath ?? '').split(' > ')[0])
 
-// Format display text (uses label if available, falls back to tag).
-// Appends (~shortcut) for items with quick typing support.
-const formatDisplayText = (item: InsertItem): string => {
+const formatTitleText = (item: InsertItem): string => {
   const name = isMarkupItem(item)
     ? item.label || item.description || item.tag
     : item.label || item.tag
-  const display = replaceParameterPlaceholders(name, item)
+  return replaceParameterPlaceholders(name, item)
+}
+
+// Appends (~shortcut) for items with quick typing support.
+const formatDisplayText = (item: InsertItem): string => {
+  const display = formatTitleText(item)
   if (item.quickType) {
     return display + ' (~' + item.quickType + ')'
   }
