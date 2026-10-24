@@ -82,7 +82,7 @@
 
     <!-- `inert` rather than a per-control disabled flag: it takes the whole tab out of
          both pointer and keyboard reach in one attribute, whatever it holds. -->
-    <div class="tab-content" :class="{ unavailable: tabUnavailable(pane.activeTab) }" :inert="tabUnavailable(pane.activeTab)">
+    <div class="tab-content" :class="{ unavailable: tabUnavailable(pane.activeTab), 'insert-content': pane.activeTab === 'insert' }" :inert="tabUnavailable(pane.activeTab)">
       <CalcpadInsertTab
         v-if="pane.activeTab === 'insert'"
         :ref="el => { if (paneIndex === 0) insertTab = el as InstanceType<typeof CalcpadInsertTab> | null }"
@@ -1139,6 +1139,11 @@ onUnmounted(() => {
 
 .tab-content.unavailable {
   opacity: 0.45;
+}
+
+.tab-content.insert-content {
+  display: flex;
+  overflow: hidden;
 }
 
 /* Sits outside .tab-content so it stays legible while the tab itself is dimmed. */
