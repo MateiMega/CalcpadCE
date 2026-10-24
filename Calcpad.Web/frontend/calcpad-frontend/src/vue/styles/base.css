@@ -575,3 +575,12 @@ button.context-menu:hover:not(:disabled) {
 .p-4 {
   padding: 16px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  :root *,
+  :root *::before,
+  :root *::after {
+    transition: none !important;
+  }
+}
