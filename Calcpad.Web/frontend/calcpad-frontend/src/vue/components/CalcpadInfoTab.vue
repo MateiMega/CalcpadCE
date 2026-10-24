@@ -26,8 +26,8 @@
           <input id="fileInfoProject" v-model="draft.project" type="text" placeholder="(none)" @keyup.enter="apply" />
         </div>
         <div class="actions">
-          <button class="primary-button" :disabled="!dirty" @click="apply">Apply</button>
-          <button class="secondary-button" :disabled="!dirty" @click="reset">Reset</button>
+          <button :disabled="!dirty" @click="apply">Apply</button>
+          <button class="secondary" :disabled="!dirty" @click="reset">Reset</button>
         </div>
 
         <dl class="details">
@@ -51,14 +51,13 @@
         </p>
         <div class="actions">
           <button
-            class="primary-button"
             :disabled="!userName"
             :title="userName ? `Record ${userName} as the reviewer, as of now, and save the file` : 'Set a user name in Settings first'"
             @click="markReviewed"
           >
             Set as Reviewed
           </button>
-          <button v-if="info.reviewedBy || info.reviewedAt" class="secondary-button" @click="clearReview">
+          <button v-if="info.reviewedBy || info.reviewedAt" class="secondary" @click="clearReview">
             Clear Review
           </button>
         </div>
@@ -294,46 +293,11 @@ function formatTimestamp(iso: string): string {
   margin-top: 8px;
 }
 
-.primary-button,
-.secondary-button {
-  border: none;
-  padding: 6px 14px;
-  font-size: var(--calcpad-font-size-md);
-  font-family: var(--vscode-font-family);
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.primary-button {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-}
-
-.primary-button:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground);
-}
-
-.primary-button:disabled,
-.secondary-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.secondary-button {
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-}
-
-.secondary-button:hover:not(:disabled) {
-  background: var(--vscode-button-secondaryHoverBackground);
-}
-
 .link-button {
   background: none;
   border: none;
   padding: 0;
   color: var(--vscode-textLink-foreground);
-  cursor: pointer;
   font: inherit;
   text-decoration: underline;
 }
