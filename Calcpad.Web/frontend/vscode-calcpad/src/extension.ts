@@ -2422,8 +2422,9 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    const showInsertCommand = vscode.commands.registerCommand('vscode-calcpad.showInsert', () => {
-        vscode.commands.executeCommand('workbench.view.extension.calcpad-ui');
+    const showInsertCommand = vscode.commands.registerCommand('vscode-calcpad.showInsert', async () => {
+        await vscode.commands.executeCommand('calcpadVueUI.focus');
+        vueUiProvider?.focusInsertSearch();
     });
 
     const editMetadataPropertiesCommand = vscode.commands.registerCommand('vscode-calcpad.editMetadataProperties', async () => {

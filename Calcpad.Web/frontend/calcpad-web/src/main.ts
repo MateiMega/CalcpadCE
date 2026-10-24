@@ -1690,7 +1690,17 @@ async function bootstrap(): Promise<void> {
     const sidebarInstance = sidebarApp.mount('#vue-sidebar') as {
         switchTab?: (id: string) => void;
         switchView?: (id: string) => void;
+        focusInsertSearch: () => Promise<void>;
     };
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key.toLowerCase() === 'i' && event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            appInstance.showSidebar();
+            void sidebarInstance.focusInsertSearch();
+        }
+    }, true);
 
     // Settings lives in the CalcpadCE view, which the Files view or a collapsed sidebar hides.
     function openSettings(): void {

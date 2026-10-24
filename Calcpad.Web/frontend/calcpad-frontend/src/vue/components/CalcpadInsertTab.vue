@@ -1,9 +1,13 @@
 <template>
-  <div class="insert-tab">
+  <div class="insert-tab" :class="{ searching: searchQuery }">
     <CalcpadSearchField
+      ref="searchField"
       v-model="searchTerm"
-      placeholder="Search items..."
+      placeholder="Search items... (Alt+I)"
       class="search-container"
+      @submit="focusResult(0)"
+      @keydown.down.exact="enterResults($event, 0)"
+      @keydown.up.exact="enterResults($event, filteredItems.length - 1)"
     />
 
     <div v-if="!searchQuery" class="insert-actions">
@@ -52,25 +56,29 @@
     <div v-else-if="displayItems.length === 0" class="no-items">
       No insert items available
     </div>
-    <div v-else-if="searchQuery">
-      <div
-        v-for="item in displayItems"
+    <select
+      v-else-if="searchQuery"
+      ref="searchResults"
+      v-model="selectedResultIndex"
+      :size="Math.max(2, displayItems.length)"
+      class="insert-results"
+      aria-label="Insert search results"
+      @keydown.enter.prevent.stop="!$event.repeat && insertSelectedResult()"
+    >
+      <option
+        v-for="(item, index) in displayItems"
         :key="itemKeys.get(item)"
-        @click="insertItem(item)"
-        class="insert-item"
+        :value="index"
+        @focus="selectedResultIndex = index"
+        @click.prevent="selectedResultIndex = index"
+        @dblclick.prevent="insertItem(item)"
         :title="buildTooltip(item)"
       >
-        <div class="item-display">
-          <CalcpadSearchHighlight :text="formatDisplayText(item)" :query="searchQuery" />
-        </div>
-        <div v-if="formatSecondaryText(item)" class="item-description">
-          <CalcpadSearchHighlight :text="formatSecondaryText(item)" :query="searchQuery" />
-        </div>
-        <div v-if="item.categoryPath" class="item-category">
-          <CalcpadSearchHighlight :text="item.categoryPath" :query="searchQuery" />
-        </div>
-      </div>
-    </div>
+        <CalcpadSearchHighlight class="item-display" :text="formatDisplayText(item)" :query="searchQuery" />
+        <CalcpadSearchHighlight v-if="formatSecondaryText(item)" class="item-description" :text="formatSecondaryText(item)" :query="searchQuery" />
+        <CalcpadSearchHighlight v-if="item.categoryPath" class="item-category" :text="item.categoryPath" :query="searchQuery" />
+      </option>
+    </select>
     <div v-else>
       <div id="tree-container">
         <!-- Tree structure will be built here -->
@@ -105,8 +113,12 @@ const emit = defineEmits<{
 
 // State
 const searchTerm = ref('')
+const searchField = ref<InstanceType<typeof CalcpadSearchField> | null>(null)
+const searchResults = ref<HTMLSelectElement | null>(null)
+const selectedResultIndex = ref(-1)
 const searchQuery = computed(() => searchTerm.value.trim())
 const symbolsPaletteOpen = ref(false)
+defineExpose({ focusSearch: () => searchField.value!.focus() })
 // All symbol groups start collapsed; users open them on demand.
 const openSymbolGroups = ref<Set<string>>(new Set())
 
@@ -214,6 +226,10 @@ const displayItems = computed(() => {
     return filteredItems.value
   }
   return props.insertItems
+})
+
+watch(filteredItems, () => {
+  selectedResultIndex.value = -1
 })
 
 // Types for tree structure built from flat items
@@ -351,6 +367,24 @@ const buildTooltip = (item: InsertItem): string => {
 }
 
 // Methods
+const focusResult = async (index: number) => {
+  if (!searchQuery.value || filteredItems.value.length === 0) return
+  selectedResultIndex.value = index
+  await nextTick()
+  searchResults.value!.options[index].focus()
+}
+
+const enterResults = (event: KeyboardEvent, index: number) => {
+  if (!searchQuery.value || filteredItems.value.length === 0 || event.isComposing) return
+  event.preventDefault()
+  event.stopPropagation()
+  void focusResult(index)
+}
+
+const insertSelectedResult = () => {
+  if (selectedResultIndex.value !== -1) insertItem(filteredItems.value[selectedResultIndex.value])
+}
+
 const insertImage = () => {
   emit('insertImage')
 }
@@ -492,7 +526,14 @@ watch(
   padding: 12px;
 }
 
+.insert-tab.searching {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .search-container {
+  flex-shrink: 0;
   margin-bottom: 12px;
 }
 
@@ -617,19 +658,55 @@ watch(
   font-style: italic;
 }
 
-.insert-item {
+.insert-results {
+  appearance: base-select;
+  display: block;
+  overflow: visible;
+  flex: none;
+  height: max-content;
+  width: 100%;
+  padding: 0 0 12px;
+  border: none;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+.insert-results option {
+  display: block;
+  width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   padding: 8px;
   margin: 2px 0;
   border: 1px solid var(--vscode-widget-border);
   border-radius: 3px;
-  cursor: pointer;
+  cursor: default;
   background: var(--vscode-editor-background);
-  transition: border-color 0.2s ease;
 }
 
-.insert-item:hover {
+.insert-results option:checked {
   border-color: var(--vscode-focusBorder);
-  background: var(--vscode-list-hoverBackground);
+}
+
+.insert-results option:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.insert-results option::checkmark {
+  display: none;
+}
+
+.item-display,
+.item-description,
+.item-category {
+  display: block;
 }
 
 .item-display {

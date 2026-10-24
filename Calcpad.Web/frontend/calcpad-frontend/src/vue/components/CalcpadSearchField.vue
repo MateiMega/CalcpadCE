@@ -7,6 +7,7 @@
       :placeholder="placeholder"
       :aria-label="placeholder"
       class="search-input"
+      @keydown.enter.exact="submitSearch"
     />
     <button
       v-if="model"
@@ -35,7 +36,22 @@ defineProps<{
 }>()
 
 const model = defineModel<string>({ required: true })
+const emit = defineEmits<{ submit: [] }>()
 const searchInput = ref<HTMLInputElement | null>(null)
+
+const submitSearch = (event: KeyboardEvent) => {
+  if (event.isComposing) return
+  event.preventDefault()
+  event.stopPropagation()
+  if (!event.repeat) emit('submit')
+}
+
+const focus = () => {
+  searchInput.value!.focus()
+  searchInput.value!.select()
+}
+
+defineExpose({ focus })
 
 const clearSearch = () => {
   model.value = ''

@@ -12,6 +12,8 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'calcpadVueUI';
 
     private _view?: vscode.WebviewView;
+    private _webviewReady = false;
+    private _pendingInsertSearch = false;
     private _outputChannel: VSCodeLogger;
     private _cachedPlots: ExtractedPlot[] = [];
     private _cachedHtml: string = '';
@@ -66,6 +68,14 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
         _token: vscode.CancellationToken,
     ) {
         this._view = webviewView;
+        this._webviewReady = false;
+        webviewView.onDidChangeVisibility(() => {
+            if (!webviewView.visible) this._webviewReady = false;
+        });
+        webviewView.onDidDispose(() => {
+            this._view = undefined;
+            this._webviewReady = false;
+        });
         this._outputChannel.appendLine('Resolving Vue webview view', 'verbose');
 
         webviewView.webview.options = {
@@ -84,7 +94,7 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
             this._outputChannel.appendLine(`Received message: ${data.type}`, 'verbose');
             switch (data.type) {
                 case 'insertText': {
-                    const insertEditor = vscode.window.activeTextEditor;
+                    const insertEditor = this.getSourceEditor?.() ?? vscode.window.activeTextEditor;
                     if (insertEditor) {
                         const position = insertEditor.selection.active;
                         // Markup snippets are written for Calcpad mode; an #html/#markdown
@@ -94,6 +104,7 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
                         await insertEditor.edit(editBuilder => {
                             editBuilder.insert(position, text);
                         });
+                        await vscode.window.showTextDocument(insertEditor.document, insertEditor.viewColumn);
                     }
                     break;
                 }
@@ -305,6 +316,8 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
                     break;
 
                 case 'getInsertData':
+                    this._webviewReady = true;
+                    if (this._pendingInsertSearch) this.focusInsertSearch();
                     this._sendInitialData();
                     break;
 
@@ -734,6 +747,15 @@ export class CalcpadVueUIProvider implements vscode.WebviewViewProvider {
     /** Ask the panel to switch to a given tab id. */
     public focusTab(tab: string) {
         this._view?.webview.postMessage({ type: 'focusTab', tab });
+    }
+
+    public focusInsertSearch(): void {
+        this._pendingInsertSearch = true;
+        this._view?.show(false);
+        if (this._webviewReady) {
+            this._view!.webview.postMessage({ type: 'focusInsertSearch' });
+            this._pendingInsertSearch = false;
+        }
     }
 
     /**

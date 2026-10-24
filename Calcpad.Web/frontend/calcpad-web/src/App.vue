@@ -2058,6 +2058,12 @@ function injectPreviewAgent(
     "    try { selection = String(window.getSelection() || ''); } catch (_e) {}",
     "    if (selection) send({ type: 'previewClipboardText', text: selection });",
     '  }',
+    "  document.addEventListener('keydown', function(e) {",
+    "    if (e.key.toLowerCase() !== 'i' || !e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;",
+    '    e.preventDefault();',
+    '    e.stopPropagation();',
+    "    send({ type: 'previewShortcut', key: e.key, altKey: true });",
+    '  }, true);',
     ...(desktopHost ? [
     "  var ACTIONS = { c: 'copy', x: 'cut', v: 'paste' };",
     "  document.addEventListener('keydown', function(e) {",
