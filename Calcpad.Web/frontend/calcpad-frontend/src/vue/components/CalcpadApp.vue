@@ -85,6 +85,7 @@
     <div class="tab-content" :class="{ unavailable: tabUnavailable(pane.activeTab) }" :inert="tabUnavailable(pane.activeTab)">
       <CalcpadInsertTab
         v-if="pane.activeTab === 'insert'"
+        :ref="el => { if (paneIndex === 0) insertTab = el as InstanceType<typeof CalcpadInsertTab> | null }"
         :insert-items="insertItems"
         @insert-text="handleInsertText"
         @insert-image="handleInsertImage"
@@ -221,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import CalcpadInsertTab from './CalcpadInsertTab.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import CalcpadTocTab from './CalcpadTocTab.vue'
@@ -289,6 +290,7 @@ const CLOSE_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" 
 interface Pane { id: number; activeTab: string }
 let paneSeq = 0
 const panes = ref<Pane[]>([{ id: paneSeq++, activeTab: 'insert' }])
+const insertTab = ref<InstanceType<typeof CalcpadInsertTab> | null>(null)
 const isSplit = computed(() => panes.value.length > 1)
 const insertItems = ref<InsertItem[]>([])
 const settings = ref<Settings>()
@@ -522,6 +524,22 @@ const openSetting = (pane: Pane, section: string, id: string) => {
 // first pane so external callers don't need to know about the split.
 const switchTab = (tabId: string) => {
   activateTab(panes.value[0], tabId)
+}
+
+const focusInsertSearch = async () => {
+  if (tabUnavailable('insert')) return
+  switchView('calcpad')
+  switchTab('insert')
+  await nextTick()
+  insertTab.value!.focusSearch()
+}
+
+const handleInsertSearchShortcut = (event: KeyboardEvent) => {
+  if (event.key.toLowerCase() === 'i' && event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    void focusInsertSearch()
+  }
 }
 
 const handleSavePdf = (variant: ExportVariant) => {
@@ -928,15 +946,21 @@ const handleMessage = (event: MessageEvent) => {
     case 'focusTab':
       if (typeof message.tab === 'string') switchTab(message.tab)
       break
+    case 'focusInsertSearch':
+      void focusInsertSearch()
+      break
   }
 }
 
-defineExpose({ switchTab, switchView })
+defineExpose({ switchTab, switchView, focusInsertSearch })
 
 // Initialize
 onMounted(() => {
   // Listen for messages from host
   window.addEventListener('message', handleMessage)
+  if (props.versionConfig.isVSCode) {
+    window.addEventListener('keydown', handleInsertSearchShortcut, true)
+  }
 
   // Request initial data
   postMessage({ type: 'getInsertData' })
@@ -959,6 +983,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('message', handleMessage)
+  if (props.versionConfig.isVSCode) {
+    window.removeEventListener('keydown', handleInsertSearchShortcut, true)
+  }
   if (props.versionConfig.isDesktop) {
     window.removeEventListener('keydown', handleExportShortcut, true)
   }

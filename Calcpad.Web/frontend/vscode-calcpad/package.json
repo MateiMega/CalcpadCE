@@ -639,6 +639,10 @@
     },
     "keybindings": [
       {
+        "command": "vscode-calcpad.showInsert",
+        "key": "alt+i"
+      },
+      {
         "command": "calcpad.runPreview",
         "key": "ctrl+alt+x",
         "mac": "cmd+alt+x",

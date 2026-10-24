@@ -39,7 +39,9 @@
               @click="insertMacro(macro)"
               @contextmenu.prevent.stop="openContextMenu($event, macro)"
             >
-              <div class="variable-name">{{ macro.name }}</div>
+              <div class="variable-name">
+                <CalcpadSearchHighlight :text="macro.name" :query="searchTerm" />
+              </div>
               <div class="variable-type">Macro</div>
               <div v-if="macro.definition" class="variable-content">{{ macro.definition }}</div>
               <div class="variable-source source-local">{{ getSourceLabel(macro.source) }}</div>
@@ -69,7 +71,9 @@
               @click="insertVariable(variable.name)"
               @contextmenu.prevent.stop="openContextMenu($event, variable)"
             >
-              <div class="variable-name">{{ variable.name }}</div>
+              <div class="variable-name">
+                <CalcpadSearchHighlight :text="variable.name" :query="searchTerm" />
+              </div>
               <div class="variable-type">Variable</div>
               <div v-if="variable.definition" class="variable-content">{{ variable.definition }}</div>
               <div class="variable-source source-local">{{ getSourceLabel(variable.source) }}</div>
@@ -99,7 +103,9 @@
               @click="insertFunction(func)"
               @contextmenu.prevent.stop="openContextMenu($event, func)"
             >
-              <div class="variable-name">{{ func.name }}</div>
+              <div class="variable-name">
+                <CalcpadSearchHighlight :text="func.name" :query="searchTerm" />
+              </div>
               <div class="variable-type">Function</div>
               <div v-if="func.params" class="variable-content">Parameters: {{ func.params }}</div>
               <div v-if="func.definition" class="variable-content">{{ func.definition }}</div>
@@ -130,7 +136,9 @@
               @click="insertCustomUnit(unit)"
               @contextmenu.prevent.stop="openContextMenu($event, unit)"
             >
-              <div class="variable-name">.{{ unit.name }}</div>
+              <div class="variable-name">
+                <CalcpadSearchHighlight :text="'.' + unit.name" :query="searchTerm" />
+              </div>
               <div class="variable-type">Custom Unit</div>
               <div v-if="unit.definition" class="variable-content">{{ unit.definition }}</div>
               <div class="variable-source source-local">{{ getSourceLabel(unit.source) }}</div>
@@ -159,6 +167,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import CalcpadSearchField from './CalcpadSearchField.vue'
+import CalcpadSearchHighlight from './CalcpadSearchHighlight.vue'
 import { writeClipboard } from '../services/clipboard'
 import type { VariablesData, VariableItem } from '../types'
 

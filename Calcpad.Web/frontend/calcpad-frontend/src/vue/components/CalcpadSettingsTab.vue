@@ -1,19 +1,19 @@
 <template>
-  <div ref="rootEl" class="settings-tab">
+  <div ref="rootEl" class="settings-tab" :class="{ 'search-active': searchActive }">
     <div class="settings-toolbar">
       <CalcpadSearchField
         v-model="searchQuery"
         class="settings-search"
         placeholder="Search settings..."
       />
-      <CollapseAllButton :expand="allCollapsed" @click="setAll(!allCollapsed)" />
+      <CollapseAllButton v-if="!searchActive" :expand="allCollapsed" @click="setAll(!allCollapsed)" />
     </div>
 
     <div class="settings-container">
       <section v-show="sectionVisible('math')" class="settings-section">
         <h3 class="section-header" @click="toggle('math')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('math') }">&#x25BC;</span>
-          Math Settings
+          <CalcpadSearchHighlight text="Math Settings" :query="query" />
         </h3>
         <div v-show="bodyVisible('math')" class="section-body">
           <div
@@ -28,12 +28,12 @@
                 v-model="settingModel(spec.key).value"
                 @change="updateSettings"
               />
-              {{ spec.label }}
+              <CalcpadSearchHighlight :text="spec.label" :query="query" />
               <span v-if="spec.detail" class="setting-info" :title="spec.detail">ⓘ</span>
             </label>
             <template v-else>
               <label :for="spec.key">
-                {{ spec.label }}:
+                <CalcpadSearchHighlight :text="spec.label" :query="query" />:
                 <span v-if="spec.detail" class="setting-info" :title="spec.detail">ⓘ</span>
               </label>
               <select
@@ -71,7 +71,7 @@
       <section v-show="sectionVisible('plot')" class="settings-section">
         <h3 class="section-header" @click="toggle('plot')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('plot') }">&#x25BC;</span>
-          Plot Settings
+          <CalcpadSearchHighlight text="Plot Settings" :query="query" />
         </h3>
         <div v-show="bodyVisible('plot')" class="section-body">
           <div
@@ -82,13 +82,15 @@
           >
             <label>
               <input type="checkbox" v-model="settingModel(spec.key).value" @change="updateSettings" />
-              {{ spec.label }}
+              <CalcpadSearchHighlight :text="spec.label" :query="query" />
               <span v-if="spec.detail" class="setting-info" :title="spec.detail">ⓘ</span>
             </label>
           </div>
 
           <div v-show="rowVisible('plot', 'screenScale')" class="setting-group">
-            <label for="screenScaleFactor">Screen Scale Factor:</label>
+            <label for="screenScaleFactor">
+              <CalcpadSearchHighlight text="Screen Scale Factor:" :query="query" />
+            </label>
             <input
               id="screenScaleFactor"
               v-model.number="localSettings.plot.screenScaleFactor"
@@ -108,12 +110,12 @@
           >
             <label v-if="spec.type === 'boolean'">
               <input type="checkbox" v-model="settingModel(spec.key).value" @change="updateSettings" />
-              {{ spec.label }}
+              <CalcpadSearchHighlight :text="spec.label" :query="query" />
               <span v-if="spec.detail" class="setting-info" :title="spec.detail">ⓘ</span>
             </label>
             <template v-else>
               <label :for="spec.key">
-                {{ spec.label }}:
+                <CalcpadSearchHighlight :text="spec.label" :query="query" />:
                 <span v-if="spec.detail" class="setting-info" :title="spec.detail">ⓘ</span>
               </label>
               <select
@@ -135,7 +137,9 @@
           </div>
 
           <div v-show="rowVisible('plot', 'lightDirection')" class="setting-group">
-            <label for="lightDirection">Light Direction:</label>
+            <label for="lightDirection">
+              <CalcpadSearchHighlight text="Light Direction:" :query="query" />
+            </label>
             <select
               id="lightDirection"
               v-model="localSettings.plot.lightDirection"
@@ -159,7 +163,7 @@
             class="setting-group"
           >
             <label :for="spec.key">
-              {{ spec.label }}:
+              <CalcpadSearchHighlight :text="spec.label" :query="query" />:
               <span v-if="spec.detail" class="setting-info" :title="spec.detail">ⓘ</span>
             </label>
             <input
@@ -179,12 +183,12 @@
       <section v-show="sectionVisible('units')" class="settings-section">
         <h3 class="section-header" @click="toggle('units')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('units') }">&#x25BC;</span>
-          Units
+          <CalcpadSearchHighlight text="Units" :query="query" />
         </h3>
         <div v-show="bodyVisible('units')" class="section-body">
           <div v-show="rowVisible('units', 'isUs')" class="setting-group">
             <label for="nonMetricUnits">
-              Non-Metric Units:
+              <CalcpadSearchHighlight text="Non-Metric Units:" :query="query" />
               <span class="setting-info" title="Selects US or UK definitions for bare unit names that differ between the two systems (gal, ton, cwt, pt, qt, bbl, tonf, therm, etc.).">ⓘ</span>
             </label>
             <select
@@ -202,7 +206,7 @@
       <section v-show="sectionVisible('pdf')" class="settings-section">
         <h3 class="section-header" @click="toggle('pdf')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('pdf') }">&#x25BC;</span>
-          PDF Export
+          <CalcpadSearchHighlight text="PDF Export" :query="query" />
         </h3>
         <div v-show="bodyVisible('pdf')" class="section-body">
           <div
@@ -212,7 +216,7 @@
             class="setting-group"
           >
             <label :for="'pdf-' + spec.key">
-              {{ spec.label }}:
+              <CalcpadSearchHighlight :text="spec.label" :query="query" />:
               <span class="setting-info" :title="spec.detail">ⓘ</span>
             </label>
             <select
@@ -246,7 +250,7 @@
 
           <div v-show="rowVisible('pdf', 'reset')" class="settings-actions">
             <button @click="resetPdfSettings" class="reset-button">
-              Reset PDF Settings
+              <CalcpadSearchHighlight text="Reset PDF Settings" :query="query" />
             </button>
           </div>
         </div>
@@ -277,7 +281,7 @@
       <section v-show="sectionVisible('editor')" class="settings-section">
         <h3 class="section-header" @click="toggle('editor')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('editor') }">&#x25BC;</span>
-          Editor
+          <CalcpadSearchHighlight text="Editor" :query="query" />
         </h3>
         <div v-show="bodyVisible('editor')" class="section-body">
           <div v-show="rowVisible('editor', 'quickTyping')" class="setting-group">
@@ -287,13 +291,15 @@
                 type="checkbox"
                 @change="updateQuickTyping"
               />
-              Enable Quick Typing
+              <CalcpadSearchHighlight text="Enable Quick Typing" :query="query" />
               <span class="setting-info" title="Type shortcuts like ~a → α, ~' → ′">ⓘ</span>
             </label>
           </div>
 
           <div v-show="rowVisible('editor', 'commentFormat')" class="setting-group">
-            <label for="commentFormat">Comment Format:</label>
+            <label for="commentFormat">
+              <CalcpadSearchHighlight text="Comment Format:" :query="query" />
+            </label>
             <select
               id="commentFormat"
               v-model="commentFormat"
@@ -312,7 +318,7 @@
                 type="checkbox"
                 @change="updateFormattingHotkeys"
               />
-              Enable Formatting Hotkeys
+              <CalcpadSearchHighlight text="Enable Formatting Hotkeys" :query="query" />
               <span class="setting-info" title="Ctrl+B for bold, Ctrl+I for italic, etc.">ⓘ</span>
             </label>
           </div>
@@ -324,7 +330,7 @@
                 type="checkbox"
                 @change="updatePreviewCursorSync"
               />
-              Sync Preview to Cursor Line
+              <CalcpadSearchHighlight text="Sync Preview to Cursor Line" :query="query" />
               <span class="setting-info" title="Scroll the preview to follow the line the cursor is on in the editor.">ⓘ</span>
             </label>
           </div>
@@ -336,7 +342,7 @@
                 type="checkbox"
                 @change="updateAutoRun"
               />
-              Auto-Run Preview
+              <CalcpadSearchHighlight text="Auto-Run Preview" :query="query" />
               <span class="setting-info" title="When off, the preview only re-renders when it is first opened or a manual run is triggered.">ⓘ</span>
             </label>
           </div>
@@ -348,7 +354,7 @@
                 type="checkbox"
                 @change="updateAutoInputMode"
               />
-              Open #UI Documents in Input Mode
+              <CalcpadSearchHighlight text="Open #UI Documents in Input Mode" :query="query" />
               <span class="setting-info" title="A document declaring #UI controls opens as its input form the first time you open it.">ⓘ</span>
             </label>
           </div>
@@ -360,14 +366,14 @@
                 type="checkbox"
                 @change="updatePreviewUiOverrides"
               />
-              Apply #UI Values in Preview
+              <CalcpadSearchHighlight text="Apply #UI Values in Preview" :query="query" />
               <span class="setting-info" title="Preview normally shows the document's own values. Turn this on to render it with the values entered into the input form instead, for tracking down an error that only appears once a form is filled in.">ⓘ</span>
             </label>
           </div>
 
           <div v-if="versionConfig.isDesktop" v-show="rowVisible('editor', 'fontFamily')" class="setting-group">
             <label for="editorFontFamily">
-              Font Family:
+              <CalcpadSearchHighlight text="Font Family:" :query="query" />
               <span class="setting-info" title="JuliaMono is the bundled default. Drop .woff2/.woff/.ttf/.otf files into the fonts folder to make them available here.">ⓘ</span>
             </label>
             <select
@@ -398,12 +404,14 @@
               title="Open the folder where custom fonts can be dropped. Reopen the Font Family picker to pick up new fonts."
               @click="openFontsFolder"
             >
-              Open Fonts Folder
+              <CalcpadSearchHighlight text="Open Fonts Folder" :query="query" />
             </button>
           </div>
 
           <div v-show="rowVisible('editor', 'previewTheme')" class="setting-group">
-            <label for="previewTheme">Preview Theme:</label>
+            <label for="previewTheme">
+              <CalcpadSearchHighlight text="Preview Theme:" :query="query" />
+            </label>
             <select
               id="previewTheme"
               v-model="previewTheme"
@@ -416,7 +424,9 @@
           </div>
 
           <div v-show="rowVisible('editor', 'darkBackground')" class="setting-group">
-            <label for="darkBackground">Dark Mode Background:</label>
+            <label for="darkBackground">
+              <CalcpadSearchHighlight text="Dark Mode Background:" :query="query" />
+            </label>
             <div class="color-input-row">
               <input
                 id="darkBackground"
@@ -435,7 +445,9 @@
           </div>
 
           <div v-show="rowVisible('editor', 'colorTheme')" class="setting-group">
-            <label for="colorTheme">Color Theme:</label>
+            <label for="colorTheme">
+              <CalcpadSearchHighlight text="Color Theme:" :query="query" />
+            </label>
             <select
               id="colorTheme"
               v-model="colorTheme"
@@ -464,7 +476,9 @@
           </div>
 
           <div v-show="rowVisible('editor', 'linterMinSeverity')" class="setting-group">
-            <label for="linterMinSeverity">Linter Minimum Severity:</label>
+            <label for="linterMinSeverity">
+              <CalcpadSearchHighlight text="Linter Minimum Severity:" :query="query" />
+            </label>
             <select
               id="linterMinSeverity"
               v-model="linterMinSeverity"
@@ -481,11 +495,13 @@
       <section v-show="sectionVisible('server')" class="settings-section">
         <h3 class="section-header" @click="toggle('server')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('server') }">&#x25BC;</span>
-          Server Settings
+          <CalcpadSearchHighlight text="Server Settings" :query="query" />
         </h3>
         <div v-show="bodyVisible('server')" class="section-body">
           <div v-show="rowVisible('server', 'url')" class="setting-group">
-            <label for="serverUrl">Remote Server URL:</label>
+            <label for="serverUrl">
+              <CalcpadSearchHighlight text="Remote Server URL:" :query="query" />
+            </label>
             <input
               id="serverUrl"
               v-model="localSettings.server.url"
@@ -499,7 +515,7 @@
       <section v-show="sectionVisible('diagnostics')" class="settings-section">
         <h3 class="section-header" @click="toggle('diagnostics')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('diagnostics') }">&#x25BC;</span>
-          Diagnostics
+          <CalcpadSearchHighlight text="Diagnostics" :query="query" />
         </h3>
         <div v-show="bodyVisible('diagnostics')" class="section-body">
           <div v-show="rowVisible('diagnostics', 'logsFolder')" class="setting-group">
@@ -508,13 +524,13 @@
               title="Opens the folder containing server logs and the most recent crash dump."
               @click="openLogsFolder"
             >
-              Open Logs Folder
+              <CalcpadSearchHighlight text="Open Logs Folder" :query="query" />
             </button>
           </div>
 
           <div v-show="rowVisible('diagnostics', 'logLevel')" class="setting-group">
             <label for="logLevel">
-              Log Level:
+              <CalcpadSearchHighlight text="Log Level:" :query="query" />
               <span class="setting-info" :title="logLevelDetail">&#9432;</span>
             </label>
             <select
@@ -532,7 +548,7 @@
 
           <div v-if="versionConfig.isWebOrDesktop" v-show="rowVisible('diagnostics', 'maxOutputLines')" class="setting-group">
             <label for="maxOutputLines">
-              Max Output Lines (per channel):
+              <CalcpadSearchHighlight text="Max Output Lines (per channel):" :query="query" />
               <span class="setting-info" title="Lines retained in each Output channel before older lines are dropped. Lower values reduce memory use and improve responsiveness when logs are noisy.">ⓘ</span>
             </label>
             <input
@@ -548,7 +564,7 @@
 
           <div v-show="rowVisible('diagnostics', 'maxPreviewSize')" class="setting-group">
             <label for="maxPreviewSize">
-              Max Preview Size (MB):
+              <CalcpadSearchHighlight text="Max Preview Size (MB):" :query="query" />
               <span class="setting-info" title="A worksheet that renders to more HTML than this is not shown in the preview — showing it risks running the app out of memory. Exporting to PDF, HTML or DOCX is unaffected. Raise it only if you need very large documents on screen.">ⓘ</span>
             </label>
             <input
@@ -564,7 +580,7 @@
 
           <div v-show="rowVisible('diagnostics', 'maxPreviewConsoleMessages')" class="setting-group">
             <label for="maxPreviewConsoleMessages">
-              Max Preview Console Messages:
+              <CalcpadSearchHighlight text="Max Preview Console Messages:" :query="query" />
               <span class="setting-info" title="How many console lines one preview render may relay before the rest are dropped. A worksheet whose scripts log in a loop can otherwise flood the console channel. Raise it when debugging a script, lower it when a library is noisy. Each line is clipped to 4 KB regardless.">ⓘ</span>
             </label>
             <input
@@ -583,11 +599,13 @@
       <section v-show="sectionVisible('configuration')" class="settings-section">
         <h3 class="section-header" @click="toggle('configuration')">
           <span class="expand-icon" :class="{ collapsed: isCollapsed('configuration') }">&#x25BC;</span>
-          Configuration
+          <CalcpadSearchHighlight text="Configuration" :query="query" />
         </h3>
         <div v-show="bodyVisible('configuration')" class="section-body">
           <div v-show="rowVisible('configuration', 'activeConfig')" class="setting-group">
-            <label for="activeConfig">Active Config:</label>
+            <label for="activeConfig">
+              <CalcpadSearchHighlight text="Active Config:" :query="query" />
+            </label>
             <select
               id="activeConfig"
               :value="activeConfig"
@@ -602,7 +620,9 @@
           </div>
 
           <div v-show="rowVisible('configuration', 'saveConfig')" class="setting-group">
-            <label for="configName">Save current settings as:</label>
+            <label for="configName">
+              <CalcpadSearchHighlight text="Save current settings as:" :query="query" />
+            </label>
             <div class="color-input-row">
               <input
                 id="configName"
@@ -623,10 +643,10 @@
 
           <div v-show="rowVisible('configuration', 'actions')" class="settings-actions">
             <button @click="openSettingsFolder" class="reset-button">
-              Open Settings Folder
+              <CalcpadSearchHighlight text="Open Settings Folder" :query="query" />
             </button>
             <button @click="resetSettings" class="reset-button">
-              Reset to Default
+              <CalcpadSearchHighlight text="Reset to Default" :query="query" />
             </button>
           </div>
         </div>
@@ -646,6 +666,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, reactive, nextTick } from 'vue'
 import CalcpadSearchField from './CalcpadSearchField.vue'
+import CalcpadSearchHighlight from './CalcpadSearchHighlight.vue'
 import CollapseAllButton from './CollapseAllButton.vue'
 import type { WritableComputedRef } from 'vue'
 import type { PdfSettings, Settings, ThemeInfo, VersionConfig } from '../types'
@@ -1392,6 +1413,10 @@ watch(
 
 .expand-icon.collapsed {
   transform: rotate(-90deg);
+}
+
+.search-active .expand-icon {
+  visibility: hidden;
 }
 
 .setting-group {
