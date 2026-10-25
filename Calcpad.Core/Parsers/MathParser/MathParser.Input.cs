@@ -13,7 +13,7 @@ namespace Calcpad.Core
             internal readonly HashSet<string> DefinedVariables = new(StringComparer.Ordinal);
             private static readonly TokenTypes[] CharTypes = new TokenTypes[127];
             private readonly MathParser _parser;
-            private readonly bool _isComplex;
+            private bool _isComplex => _parser._settings.IsComplex;
             private readonly Container<CustomFunction> _functions;
             private readonly List<SolverBlock> _solveBlocks;
             private readonly Dictionary<string, Variable> _variables;
@@ -60,7 +60,6 @@ namespace Calcpad.Core
                 _solveBlocks = parser._solveBlocks;
                 _variables = parser._variables;
                 _units = parser._units;
-                _isComplex = parser._settings.IsComplex;
                 _localVariables.Push(_variables); // Global variables will be always on the bottom of stack
                 DefineVariables();
             }

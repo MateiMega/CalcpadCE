@@ -529,6 +529,33 @@ namespace Calcpad.Core {
         }
 
         // / <summary>
+        // /   Looks up a localized string similar to Complex numbers are not supported outside of complex mode..
+        // / </summary>
+        public static string Complex_numbers_are_not_supported_outside_of_complex_mode {
+            get {
+                return ResourceManager.GetString("Complex_numbers_are_not_supported_outside_of_complex_mode", resourceCulture);
+            }
+        }
+
+        // / <summary>
+        // /   Looks up a localized string similar to Function &quot;{0}&quot; with complex values is not supported outside of complex mode..
+        // / </summary>
+        public static string Function_0_with_complex_values_is_not_supported_outside_of_complex_mode {
+            get {
+                return ResourceManager.GetString("Function_0_with_complex_values_is_not_supported_outside_of_complex_mode", resourceCulture);
+            }
+        }
+
+        // / <summary>
+        // /   Looks up a localized string similar to Complex variable &quot;{0}&quot; is not supported outside of complex mode..
+        // / </summary>
+        public static string Complex_variable_0_is_not_supported_outside_of_complex_mode {
+            get {
+                return ResourceManager.GetString("Complex_variable_0_is_not_supported_outside_of_complex_mode", resourceCulture);
+            }
+        }
+
+        // / <summary>
         // /   Looks up a localized string similar to Function {0} is not defined in complex mode..
         // / </summary>
         public static string Function_0_is_not_defined_in_complex_mode {
