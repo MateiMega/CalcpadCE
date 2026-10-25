@@ -15,7 +15,9 @@ export default defineConfig(() => ({
     },
     resolve: {
         alias: {
-            'calcpad-frontend': path.resolve(__dirname, '../calcpad-frontend/src'),
+            // import.meta.dirname rather than __dirname: vite's native config loader
+            // (the planned default) has no CJS globals to shim.
+            'calcpad-frontend': path.resolve(import.meta.dirname, '../calcpad-frontend/src'),
         },
     },
     build: {

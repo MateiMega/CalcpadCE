@@ -13,6 +13,7 @@ namespace Calcpad.OpenXml
     internal static class ImageWriter
     {
         private static readonly Random Random = new();
+        private const int DefaultImageSize = 96;
         internal static OpenXmlElement AddImage(string src, string url, string name, int width, int height, MainDocumentPart mainPart, string align)
         {
             ImageProcessor imageProcessor;
@@ -20,17 +21,15 @@ namespace Calcpad.OpenXml
                 imageProcessor = new SvgImageProcessor(src);
             else if (src.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
                 imageProcessor = new Base64ImageProcessor(src);
-            else if (src.Contains('/'))
+            else if (src.Contains('/') || src.Contains('\\'))
             {
-                if (!Uri.IsWellFormedUriString(src, UriKind.Absolute))
-                    src = url + src;
+                if (!Path.IsPathRooted(src) && !Uri.IsWellFormedUriString(src, UriKind.Absolute))
+                    src = ResolveRelativeSource(src, url);
 
-                var slash = '/';
                 if (src.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
                 {
                     src = src[8..].Replace('/', '\\');
                     imageProcessor = new FileImageProcessor(src);
-                    slash = '\\';
                 }
                 else if (File.Exists(src))
                     imageProcessor = new FileImageProcessor(src);
@@ -38,7 +37,7 @@ namespace Calcpad.OpenXml
                     imageProcessor = new UrlImageProcessor(src);
 
                 if (string.IsNullOrWhiteSpace(name))
-                    name = src[(src.LastIndexOf(slash) + 1)..];
+                    name = Path.GetFileName(src);
 
             }
             else
@@ -48,19 +47,42 @@ namespace Calcpad.OpenXml
                     name = src[(src.LastIndexOf('\\') + 1)..];
             }
             var imagePart = imageProcessor.GetImagePart(mainPart);
-            if (width == 0 || height == 0)
+            if (width <= 0 || height <= 0)
             {
                 (int w, int h) = imageProcessor.ImageSize;
-                if (width == 0)
-                    width = w;
-                if (height == 0)
-                    height = h;
-                if (height != h)
-                    width = (int)(width * height / (double)h);
-                if (width != w)
-                    height = (int)(height * width / (double)w);
+                if (w > 0 && h > 0)
+                {
+                    if (width <= 0 && height <= 0)
+                    {
+                        width = w;
+                        height = h;
+                    }
+                    else if (width <= 0)
+                        width = (int)Math.Round(height * w / (double)h);
+                    else if (height <= 0)
+                        height = (int)Math.Round(width * h / (double)w);
+                }
             }
+            if (width <= 0)
+                width = DefaultImageSize;
+            if (height <= 0)
+                height = DefaultImageSize;
             return AddImageReference(name, width, height, mainPart.GetIdOfPart(imagePart), align);
+        }
+
+        private static string ResolveRelativeSource(string src, string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return src;
+
+            if (Uri.TryCreate(url, UriKind.Absolute, out var baseUri) &&
+                !string.Equals(baseUri.Scheme, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase))
+                return new Uri(baseUri, src).ToString();
+
+            var basePath = url;
+            if (File.Exists(basePath))
+                basePath = Path.GetDirectoryName(basePath);
+            return Path.GetFullPath(Path.Combine(basePath, src));
         }
 
         private static Paragraph AddImageReference(string name, int width, int height, string imageId, string align)

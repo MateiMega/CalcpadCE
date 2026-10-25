@@ -36,7 +36,7 @@ namespace Calcpad.Cli
         internal void ToOpenXml(string html, string path, List<string> expressions)
         {
             html = GetHtmlData(HtmlApplyWorksheet(html));
-            new OpenXmlWriter(expressions).Convert(html, path);
+            new OpenXmlWriter(expressions).Convert(html, path, Directory.GetCurrentDirectory());
             if (!_isSilent && File.Exists(path))
                 Run(path);
         }

@@ -91,6 +91,8 @@ Some formatting that is commonly used in engineering design worksheets is predef
 
 `'<table class="bordered">...</table>`
 
+Tables are bordered in Word export as well, and not only when they carry this class. A table is exported with borders whenever it is drawn with them in the report, whichever way the script asks for it: the class above, the legacy `<table border="1">` attribute, or Css — inline (`'<td style="border: solid 1pt #000000">`) or in a `<style>` block (`'  tbody td { border: solid 1pt #CCCCCC; }`). Word has no cascading style sheet, so the rules are read while the file is written and applied as explicit cell borders, keeping the width and the colour they declare. Rules that target a class the table does not have, `@media screen` blocks and pseudo-classes such as `:hover` are ignored, and so is `.dark-theme`: a Word page is always light.
+
 **data** - makes the first column left aligned and the others - right aligned:
 
 `'<table class="data">...</table>`

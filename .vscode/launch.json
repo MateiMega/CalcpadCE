@@ -2,6 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // The ASP.NET Core host that serves the REST API, the worksheet
+            // converter and the compiled HTML. F5 rebuilds it first, then opens
+            // /swagger once the Kestrel "Now listening on:" line appears.
+            // The port has to stay 9420: calcpad-web proxies /api there
+            // (see Calcpad.Web/frontend/calcpad-web/vite.config.ts).
             "name": "Server: Debug (.NET)",
             "type": "coreclr",
             "request": "launch",
@@ -20,6 +25,10 @@
             }
         },
         {
+            // Second VS Code window with the extension loaded from source.
+            // The preLaunchTask chain compiles the shared lib, compiles the
+            // extension, then publishes Calcpad.Server into vscode-calcpad/bin
+            // so the extension finds a complete runtimeconfig.json + deps.json.
             "name": "Extension: Run",
             "type": "extensionHost",
             "request": "launch",
@@ -32,13 +41,58 @@
             "preLaunchTask": "Extension: Compile & Sync Server"
         },
         {
+            // Browser debugging for the web editor. Relies on the background
+            // task "Web: Dev Server", which VS Code keeps alive as long as the
+            // debug session is running. The /api proxy needs "Server: Debug"
+            // (or the "Web + Server: Full Stack" compound) to be up as well.
+            "name": "Web: Dev (calcpad-web)",
+            "type": "pwa-chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/Calcpad.Web/frontend/calcpad-web",
+            "preLaunchTask": "Web: Dev Server",
+            "sourceMaps": true
+        },
+        {
+            // Tauri desktop shell: stages the .NET sidecar, then runs
+            // `tauri dev`, which compiles the Rust crate and opens the window.
             "name": "Desktop: Dev (Tauri)",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["desktop.mjs", "dev"],
+            "program": "${workspaceFolder}/Calcpad.Web/frontend/calcpad-desktop/desktop.mjs",
+            "args": ["dev"],
             "cwd": "${workspaceFolder}/Calcpad.Web/frontend/calcpad-desktop",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            // Only desktop.mjs itself is debugged; the cargo / tauri children
+            // are native processes, so attaching to them is pointless.
+            "autoAttachChildProcesses": false,
+            // rustup installs cargo into the user profile, and stage-sidecar
+            // shells out to `rustc -vV` to pick the .NET RID. A VS Code window
+            // that was already open when Rust was installed has no .cargo\bin
+            // on its PATH, so the Tauri CLI would report "cargo not found".
+            // Prepending it here makes F5 work without restarting the editor.
+            // The PATH separator differs per platform, hence the per-OS blocks.
+            "windows": {
+                "env": { "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:PATH}" }
+            },
+            "osx": {
+                "env": { "PATH": "${env:HOME}/.cargo/bin:${env:PATH}" }
+            },
+            "linux": {
+                "env": { "PATH": "${env:HOME}/.cargo/bin:${env:PATH}" }
+            }
+        }
+    ],
+    "compounds": [
+        {
+            // One F5 for the web editor: Kestrel on 9420 plus Vite on 5173.
+            // Stop either one and both go down, which is what you want after
+            // a debugging session.
+            "name": "Web + Server: Full Stack",
+            "configurations": ["Server: Debug (.NET)", "Web: Dev (calcpad-web)"],
+            "stopAll": true,
+            "presentation": { "group": "stack", "order": 1 }
         }
     ]
 }

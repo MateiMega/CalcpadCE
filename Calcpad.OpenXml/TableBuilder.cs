@@ -22,6 +22,8 @@ namespace Calcpad.OpenXml
         }
 
         public bool IsBorderedTable;
+        public TableBorder HeadBorder = TableBorder.DefaultHead;
+        public TableBorder BodyBorder = TableBorder.DefaultBody;
         private List<CellData> _currentRowSpan = [];
         private List<CellData> _prevRowSpan = [];
         private TableRow _currentRow;
@@ -45,10 +47,10 @@ namespace Calcpad.OpenXml
             return _currentRow;
         }
 
-        public TableCell AddTableCell(bool isHead, int colSpan, int rowSpan)
+        public TableCell AddTableCell(bool isHead, int colSpan, int rowSpan, TableBorder border)
         {
             AddMergedCells();
-            var tc = CreateTableCell(isHead);
+            var tc = CreateTableCell(isHead, border);
             var tcp = tc.TableCellProperties;
             var n = colSpan == 0 ? 1 : colSpan;
             for (int i = 0; i < n; ++i)
@@ -72,46 +74,20 @@ namespace Calcpad.OpenXml
             return tc;
         }
 
-        private TableCell CreateTableCell(bool isHead)
+        private TableCell CreateTableCell(bool isHead, TableBorder border)
         {
             var tc = new TableCell();
             var tcp = new TableCellProperties();
             tc.TableCellProperties = tcp;
-            const uint size = 8u;
-            var color = isHead ? "AAAAAA" : "CCCCCC";
-            if (!IsBorderedTable)
+            if (!border.IsVisible)
                 return tc;
 
             tcp.TableCellBorders = new TableCellBorders()
             {
-                LeftBorder = new LeftBorder()
-                {
-                    Val = BorderValues.Single,
-                    Size = size,
-                    Space = 0u,
-                    Color = color
-                },
-                RightBorder = new RightBorder()
-                {
-                    Val = BorderValues.Single,
-                    Size = size,
-                    Space = 0u,
-                    Color = color
-                },
-                TopBorder = new TopBorder()
-                {
-                    Val = BorderValues.Single,
-                    Size = size,
-                    Space = 0u,
-                    Color = color
-                },
-                BottomBorder = new BottomBorder()
-                {
-                    Val = BorderValues.Single,
-                    Size = size,
-                    Space = 0u,
-                    Color = color
-                },
+                LeftBorder = CreateBorder<LeftBorder>(border.Left),
+                RightBorder = CreateBorder<RightBorder>(border.Right),
+                TopBorder = CreateBorder<TopBorder>(border.Top),
+                BottomBorder = CreateBorder<BottomBorder>(border.Bottom),
             };
             if (isHead)
             {
@@ -122,6 +98,17 @@ namespace Calcpad.OpenXml
                 };
             }
             return tc;
+
+            static T CreateBorder<T>(TableBorderEdge edge) where T : BorderType, new() =>
+                edge.IsVisible
+                    ? new T
+                    {
+                        Val = BorderValues.Single,
+                        Size = edge.Size,
+                        Space = 0u,
+                        Color = edge.Color
+                    }
+                    : null;
         }
 
         private void AddMergedCells()
@@ -135,7 +122,7 @@ namespace Calcpad.OpenXml
                     break;
 
                 _currentRowSpan.Add(cellData);
-                var tc = CreateTableCell(cellData.IsHead);
+                var tc = CreateTableCell(cellData.IsHead, cellData.IsHead ? HeadBorder : BodyBorder);
                 tc.TableCellProperties.VerticalMerge = new VerticalMerge()
                 {
                     Val = MergedCellValues.Continue

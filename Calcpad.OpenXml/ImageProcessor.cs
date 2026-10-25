@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace Calcpad.OpenXml
 {
@@ -48,8 +49,52 @@ namespace Calcpad.OpenXml
                 "ico" => ImagePartType.Icon,
                 "pcx" => ImagePartType.Pcx,
                 "svg" => ImagePartType.Svg,
+                "svg+xml" => ImagePartType.Svg,
                 _ => throw new Exception(string.Format(Messages.Unsupported_image_type_0, ext))
             };
+        }
+
+        protected static (int Width, int Height) GetSvgImageSize(string svg)
+        {
+            var width = GetSvgNumber(svg, "width");
+            var height = GetSvgNumber(svg, "height");
+            if (width > 0 && height > 0)
+                return ((int)Math.Round(width), (int)Math.Round(height));
+
+            var viewBox = Regex.Match(
+                svg,
+                @"\bviewBox\s*=\s*['""]\s*(-?[0-9]+(?:\.[0-9]+)?)\s+(-?[0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)\s*['""]",
+                RegexOptions.IgnoreCase);
+            if (!viewBox.Success)
+                return default;
+
+            if (!double.TryParse(viewBox.Groups[3].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var viewWidth) ||
+                !double.TryParse(viewBox.Groups[4].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var viewHeight) ||
+                viewWidth <= 0 || viewHeight <= 0)
+                return default;
+
+            if (width > 0 && height <= 0)
+                height = width * viewHeight / viewWidth;
+            else if (height > 0 && width <= 0)
+                width = height * viewWidth / viewHeight;
+            else
+            {
+                width = viewWidth;
+                height = viewHeight;
+            }
+
+            return ((int)Math.Round(width), (int)Math.Round(height));
+        }
+
+        private static double GetSvgNumber(string svg, string attribute)
+        {
+            var match = Regex.Match(
+                svg,
+                $@"\b{attribute}\s*=\s*['""]\s*([0-9]+(?:\.[0-9]+)?)",
+                RegexOptions.IgnoreCase);
+            return match.Success && double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+                ? value
+                : 0;
         }
     }
 
@@ -82,7 +127,7 @@ namespace Calcpad.OpenXml
     {
         public override ImagePart GetImagePart(MainDocumentPart mainPart)
         {
-            var ext = src[(src.LastIndexOf('.') + 1)..];
+            var ext = GetUrlExtension(src);
             var imageType = GetImagePartType(ext);
             var imagePart = mainPart.AddImagePart(imageType);
             var uri = new Uri(src);
@@ -99,6 +144,14 @@ namespace Calcpad.OpenXml
                 imagePart.FeedData(stream);
             }
             return imagePart;
+        }
+
+        private static string GetUrlExtension(string value)
+        {
+            if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
+                return Path.GetExtension(uri.AbsolutePath).TrimStart('.');
+
+            return Path.GetExtension(value).TrimStart('.');
         }
 
         public override (int, int) ImageSize
@@ -139,14 +192,6 @@ namespace Calcpad.OpenXml
     internal class FileImageProcessor : ImageProcessor
     {
         private readonly FileInfo _fileInfo;
-        private static readonly Regex WidthRegex = new(
-            @"<svg[^>]*\bwidth\s*=\s*['""]?(\d+)",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        private static readonly Regex HeightRegex = new(
-            @"<svg[^>]*\bheight\s*=\s*['""]?(\d+)",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
         public FileImageProcessor(string imageSrc) : base(imageSrc)
         {
             _fileInfo = new FileInfo(imageSrc);
@@ -184,15 +229,7 @@ namespace Calcpad.OpenXml
         private static (int, int) GetSVGImageSize(string src)
         {
             string svg = File.ReadAllText(src);
-            var widthMatch = WidthRegex.Match(svg);
-            var heightMatch = HeightRegex.Match(svg);
-            if (widthMatch.Success && heightMatch.Success)
-            {
-                int width = (int)CssParser.ParseSize(widthMatch.Groups[1].Value);
-                int height = (int)CssParser.ParseSize(heightMatch.Groups[1].Value);
-                return (width, height);
-            }
-            return default;
+            return GetSvgImageSize(svg);
         }
     }
 
@@ -207,6 +244,6 @@ namespace Calcpad.OpenXml
             return imagePart;
         }
 
-        public override (int, int) ImageSize => (0, 0);
+        public override (int, int) ImageSize => GetSvgImageSize(src);
     }
 }

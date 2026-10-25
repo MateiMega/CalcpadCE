@@ -229,7 +229,8 @@ namespace Calcpad.Highlighter.Snippets.Data
                     "until a number is changed.\n\n" +
                     "The class is not decoration only: Word export reads it to decide whether the " +
                     "table keeps its borders, so dropping it changes the `.docx` as well as the " +
-                    "report.\n\n" +
+                    "report. The borders declared below are read the same way, so a table without " +
+                    "the class is still bordered in Word as long as these rules match it.\n\n" +
                     "Markdown tables are a separate case — Markdig gives them no class, so they are " +
                     "reached through `thead`/`tbody` instead. See *Markdown Table*.",
                 Category = "CSS"
@@ -376,7 +377,9 @@ namespace Calcpad.Highlighter.Snippets.Data
                     "The template sets `border-collapse: collapse` and padding but no borders, so a " +
                     "pipe table renders borderless.\n\n" +
                     "Scoped through `thead`/`tbody` rather than `table`, because Calcpad\'s own " +
-                    "matrices and `#UI` datagrids are tables too and emit neither.\n\n" + MarkdownNote,
+                    "matrices and `#UI` datagrids are tables too and emit neither.\n\n" +
+                    "Word export reads these rules as well, so the table is bordered in the " +
+                    "`.docx` too, not only in the report.\n\n" + MarkdownNote,
                 Category = "CSS"
             },
             new SnippetItem

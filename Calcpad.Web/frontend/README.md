@@ -89,9 +89,10 @@ The desktop app includes the bundled calculation server.
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ or 22.12+ — Vite 8 does not run on Node 18
 - npm
 - .NET 10 SDK (for building the backend)
+- Rust toolchain (only for the desktop app; `tauri build` needs `cargo`)
 
 ### Building
 

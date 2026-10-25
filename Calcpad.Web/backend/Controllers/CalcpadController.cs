@@ -447,7 +447,7 @@ namespace Calcpad.Server.Controllers
 
                 using var ms = new MemoryStream();
                 var writer = new OpenXmlWriter(openXmlExpressions.ToList());
-                writer.Convert(html, ms);
+                writer.Convert(html, ms, request.SourceFilePath);
                 var bytes = ms.ToArray();
 
                 FileLogger.LogVerbose("DOCX generated successfully", $"Size: {bytes.Length} bytes");

@@ -19,6 +19,9 @@ namespace Calcpad.OpenXml
         private readonly List<string> _expressions = expressions;
         private readonly Queue<OpenXmlElement> _buffer = new();
         private readonly TableBuilder _tableBuilder = new();
+        private CssStyleSheet _styles = CssStyleSheet.Empty;
+        private TableBorder _headBorder = TableBorder.DefaultHead;
+        private TableBorder _bodyBorder = TableBorder.DefaultBody;
         private string _url = string.Empty;
         private readonly Stack<(int, bool)> _listLevels = new();
         public string Convert(string html, Stream stream, string url = "")
@@ -49,6 +52,9 @@ namespace Calcpad.OpenXml
             htmlDocument.LoadHtml(html);
             var mainNode = htmlDocument.DocumentNode.SelectSingleNode("// body");
             mainNode ??= htmlDocument.DocumentNode;
+            // Borders are declared in Css, which Word cannot read, so the rules are
+            // collected up front and resolved per table below.
+            _styles = CssStyleSheet.FromDocument(htmlDocument.DocumentNode);
 
             var body = (Body)ParseHtmlNode(mainNode, mainPart);
             AddSectionProperties(body);
@@ -143,8 +149,18 @@ namespace Calcpad.OpenXml
                 var isList = nodeName == "ol" || nodeName == "ul";
                 if (isList)
                 {
-                    var numId = mainPart.NumberingDefinitionsPart.Numbering.Elements<NumberingInstance>().Select(n => n.NumberID.Value).DefaultIfEmpty(0).Max() + 1;
-                    _listLevels.Push((numId, nodeName == "ol"));
+                    var isOrdered = nodeName == "ol";
+                    var numbering = mainPart.NumberingDefinitionsPart.Numbering;
+                    var numId = numbering.Elements<NumberingInstance>()
+                        .Select(n => n.NumberID.Value)
+                        .DefaultIfEmpty(0)
+                        .Max() + 1;
+                    numbering.AppendChild(new NumberingInstance(
+                        new AbstractNumId() { Val = isOrdered ? 1 : 0 })
+                    {
+                        NumberID = numId
+                    });
+                    _listLevels.Push((numId, isOrdered));
                 }
                 var childNodes = domNode.ChildNodes;
                 var n = childNodes.Count;
@@ -346,6 +362,23 @@ namespace Calcpad.OpenXml
                 case "thead":
                 case "tbody":
                     return new CustomXmlBlock() { Element = domNode.Name };
+                case "article":
+                case "aside":
+                case "blockquote":
+                case "details":
+                case "dl":
+                case "dt":
+                case "dd":
+                case "figure":
+                case "figcaption":
+                case "footer":
+                case "header":
+                case "main":
+                case "nav":
+                case "pre":
+                case "section":
+                case "summary":
+                    return new CustomXmlBlock() { Element = domNode.Name };
                 case "small":
                     return new Run(new RunProperties(new FontSize() { Val = "22" }));
                 case "img":
@@ -380,15 +413,23 @@ namespace Calcpad.OpenXml
                     if (domNode.HasClass("matrix"))
                         return null;
 
-                    _tableBuilder.IsBorderedTable = domNode.HasClass("bordered");
+                    var (isBordered, headBorder, bodyBorder) = _styles.GetTableBorders(domNode);
+                    _tableBuilder.IsBorderedTable = isBordered;
+                    _tableBuilder.HeadBorder = headBorder;
+                    _tableBuilder.BodyBorder = bodyBorder;
+                    _headBorder = headBorder;
+                    _bodyBorder = bodyBorder;
                     return _tableBuilder.AddTable();
                 case "tr":
                     return _tableBuilder.AddTableRow();
                 case "th":
                 case "td":
+                    var isHead = domNode.Name == "th";
                     var colSpan = domNode.GetAttributeValue("colspan", 1);
                     var rowSpan = domNode.GetAttributeValue("rowspan", 1);
-                    return _tableBuilder.AddTableCell(domNode.Name == "th", colSpan, rowSpan);
+                    // A cell may be bordered on its own, independently of the table.
+                    var border = _styles.GetBorder(domNode) ?? (isHead ? _headBorder : _bodyBorder);
+                    return _tableBuilder.AddTableCell(isHead, colSpan, rowSpan, border);
                 case "li":
                     return AddListItem();
                 case "p":
@@ -645,15 +686,30 @@ namespace Calcpad.OpenXml
             return r;
         }
 
-        private static Text AddText(HtmlNode domNode)
+        private static OpenXmlElement AddText(HtmlNode domNode)
         {
             var s = HttpUtility.HtmlDecode(domNode.InnerText);
+            s = s.Replace("\r\n", "\n").Replace('\r', '\n');
             var hasNewLine = s.Contains('\n');
             if (hasNewLine && string.IsNullOrWhiteSpace(s))
                 return null;
 
             if (hasNewLine)
-                s = s.Replace("\n", string.Empty);
+            {
+                var run = new Run();
+                var lines = s.Split('\n');
+                for (var i = 0; i < lines.Length; ++i)
+                {
+                    if (lines[i].Length > 0)
+                        run.AppendChild(new Text(lines[i])
+                        {
+                            Space = SpaceProcessingModeValues.Preserve
+                        });
+                    if (i + 1 < lines.Length)
+                        run.AppendChild(new Break());
+                }
+                return run;
+            }
 
             var t = new Text(s)
             {
@@ -688,7 +744,10 @@ namespace Calcpad.OpenXml
             {
                 var uriSuccess = Uri.TryCreate(href, UriKind.Absolute, out Uri uri);
                 if (!uriSuccess && !string.IsNullOrWhiteSpace(url))
-                    uriSuccess = Uri.TryCreate(url + href, UriKind.Absolute, out uri);
+                {
+                    var baseUri = GetBaseUri(url);
+                    uriSuccess = baseUri is not null && Uri.TryCreate(baseUri, href, out uri);
+                }
 
                 if (uriSuccess)
                 {
@@ -698,6 +757,23 @@ namespace Calcpad.OpenXml
                 }
             }
             return hlink;
+        }
+
+        private static Uri GetBaseUri(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            if (Path.IsPathRooted(value))
+            {
+                var path = File.Exists(value) ? Path.GetDirectoryName(value) : value;
+                return new Uri(Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar);
+            }
+
+            if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
+                return uri.AbsoluteUri.EndsWith("/", StringComparison.Ordinal) ? uri : new Uri(uri.AbsoluteUri + "/");
+
+            return null;
         }
 
         private static Paragraph AddCellParagraph(JustificationValues justification)

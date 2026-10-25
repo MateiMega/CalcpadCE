@@ -10,6 +10,10 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "baseUrl": ".",
+    // The webview compiles the shared library sources in place (see "include"),
+    // so the common root is the parent directory, not this project's src.
+    // The check runs with --noEmit, so this only widens what the program may contain.
+    "rootDir": "..",
     "paths": {
       "@/*": ["src/CalcpadVuePanel/*"],
       "@calcpad-vue/*": ["../calcpad-frontend/src/vue/*"]

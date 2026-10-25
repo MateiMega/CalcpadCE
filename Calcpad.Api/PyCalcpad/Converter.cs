@@ -26,7 +26,7 @@ namespace Calcpad
         internal void ToOpenXml(string html, string path, List<string> expressions)
         {
             html = GetHtmlData(HtmlApplyWorksheet(html));
-            new OpenXmlWriter(expressions).Convert(html, path);
+            new OpenXmlWriter(expressions).Convert(html, path, Directory.GetCurrentDirectory());
         }
         internal string HtmlApplyWorksheet(string s)
         {
