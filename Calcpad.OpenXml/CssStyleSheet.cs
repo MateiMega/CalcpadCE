@@ -1,7 +1,9 @@
 using HtmlAgilityPack;
+using DocumentFormat.OpenXml.Wordprocessing;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace Calcpad.OpenXml
@@ -56,32 +58,26 @@ namespace Calcpad.OpenXml
         /// The first item of the result is true when at least one of them is drawn, which
         /// is what selects the table style and the cell padding in Word.
         /// </summary>
-        internal (bool IsBordered, TableBorder Head, TableBorder Body) GetTableBorders(HtmlNode table)
+        internal (bool IsBordered, TableBorder Table, TableBorder Head, TableBorder Body, string HeadShading, string BodyShading) GetTableBorders(HtmlNode table)
         {
             var head = GetBorder(table.SelectSingleNode(".//th"));
             var body = GetBorder(table.SelectSingleNode(".//td"));
+            var own = GetBorder(table);
+            var headShading = GetBackground(table.SelectSingleNode(".//th"));
+            var bodyShading = GetBackground(table.SelectSingleNode(".//td"));
             if (table.HasClass("bordered") || HasLegacyBorder(table))
             {
                 head ??= TableBorder.DefaultHead;
                 body ??= TableBorder.DefaultBody;
+                headShading ??= table.HasClass("bordered") ? "F0F0F0" : null;
             }
-            else
-            {
-                var own = GetBorder(table);
-                if (own.HasValue)
-                {
-                    head = own;
-                    body = own;
-                }
-                else
-                {
-                    head ??= TableBorder.None;
-                    body ??= TableBorder.None;
-                }
-            }
+            head ??= TableBorder.None;
+            body ??= TableBorder.None;
             var headBorder = head.Value;
             var bodyBorder = body.Value;
-            return (headBorder.IsVisible || bodyBorder.IsVisible, headBorder, bodyBorder);
+            var tableBorder = own ?? TableBorder.None;
+            return (tableBorder.IsVisible || headBorder.IsVisible || bodyBorder.IsVisible,
+                tableBorder, headBorder, bodyBorder, headShading, bodyShading);
         }
 
         /// <summary>
@@ -102,6 +98,38 @@ namespace Calcpad.OpenXml
             }
             state.Apply(node.GetAttributeValue("style", null));
             return state.ToBorder();
+        }
+
+        internal (string Foreground, string Background) GetColors(HtmlNode node)
+        {
+            if (node is null)
+                return (null, null);
+
+            var state = new ColorState();
+            foreach (var rule in _rules)
+            {
+                if (rule.Matches(node))
+                    state.Apply(rule.Declarations);
+            }
+            state.Apply(node.GetAttributeValue("style", null));
+            return state.Values;
+        }
+
+        internal string GetBackground(HtmlNode node) => GetColors(node).Background;
+
+        internal TextStyle GetTextStyle(HtmlNode node)
+        {
+            if (node is null)
+                return default;
+
+            var state = new TextStyleState();
+            foreach (var rule in _rules)
+            {
+                if (rule.Matches(node))
+                    state.Apply(rule.Declarations);
+            }
+            state.Apply(node.GetAttributeValue("style", null));
+            return state.ToStyle();
         }
 
         /// <summary>
@@ -278,7 +306,8 @@ namespace Calcpad.OpenXml
                 return hex.Length >= 6 ? hex[..6].ToUpperInvariant() : null;
             }
 
-            if (value.StartsWith("rgb(", StringComparison.OrdinalIgnoreCase))
+            if (value.StartsWith("rgb(", StringComparison.OrdinalIgnoreCase) ||
+                value.StartsWith("rgba(", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
@@ -292,27 +321,50 @@ namespace Calcpad.OpenXml
             return CssColor.NameToHex(value);
         }
 
+        private static List<string> SplitValues(string value)
+        {
+            var values = new List<string>();
+            var start = 0;
+            var depth = 0;
+            for (var i = 0; i < value.Length; ++i)
+            {
+                if (value[i] == '(')
+                    ++depth;
+                else if (value[i] == ')')
+                    depth = Math.Max(0, depth - 1);
+                else if (depth == 0 && char.IsWhiteSpace(value[i]))
+                {
+                    if (i > start)
+                        values.Add(value[start..i]);
+                    while (i + 1 < value.Length && char.IsWhiteSpace(value[i + 1]))
+                        ++i;
+                    start = i + 1;
+                }
+            }
+            if (start < value.Length)
+                values.Add(value[start..]);
+            return values;
+        }
+
+        private static List<string> SplitTokens(string value) => SplitValues(value);
+
         /// <summary>
         /// The border properties of one element, accumulated while the Css cascades.
         /// A later declaration of the same property replaces an earlier one.
         /// </summary>
         private struct BorderState
         {
-            private bool _declared;
-            private bool _hasStyle;
-            private bool _styleVisible;
-            private bool _hasWidth;
-            private double _points;
-            private bool _transparent;
-            private string _color;
+            private BorderSide _top;
+            private BorderSide _right;
+            private BorderSide _bottom;
+            private BorderSide _left;
 
             internal void Apply(string declarations)
             {
                 if (string.IsNullOrWhiteSpace(declarations))
                     return;
 
-                var props = declarations.Split(';');
-                foreach (var prop in props)
+                foreach (var prop in declarations.Split(';'))
                 {
                     var index = prop.IndexOf(':');
                     if (index < 0)
@@ -326,66 +378,154 @@ namespace Calcpad.OpenXml
                     switch (name)
                     {
                         case "border":
-                        case "border-top":
-                        case "border-right":
-                        case "border-bottom":
-                        case "border-left":
+                            _top.ApplyShorthand(value);
+                            _right.ApplyShorthand(value);
+                            _bottom.ApplyShorthand(value);
+                            _left.ApplyShorthand(value);
+                            break;
+                        case "border-top": _top.ApplyShorthand(value); break;
+                        case "border-right": _right.ApplyShorthand(value); break;
+                        case "border-bottom": _bottom.ApplyShorthand(value); break;
+                        case "border-left": _left.ApplyShorthand(value); break;
                         case "border-block":
+                            _top.ApplyShorthand(value);
+                            _bottom.ApplyShorthand(value);
+                            break;
                         case "border-inline":
-                            ApplyShorthand(value);
+                            _left.ApplyShorthand(value);
+                            _right.ApplyShorthand(value);
                             break;
-                        case "border-width":
-                        case "border-top-width":
-                        case "border-right-width":
-                        case "border-bottom-width":
-                        case "border-left-width":
-                            _declared = true;
-                            _hasWidth = true;
-                            _points = ToPoints(value);
-                            break;
-                        case "border-style":
-                        case "border-top-style":
-                        case "border-right-style":
-                        case "border-bottom-style":
-                        case "border-left-style":
-                            _declared = true;
-                            _hasStyle = true;
-                            _styleVisible = !IsNone(value);
-                            if (_styleVisible && !_hasWidth)
-                                _points = ToPoints("medium");
-                            break;
-                        case "border-color":
-                        case "border-top-color":
-                        case "border-right-color":
-                        case "border-bottom-color":
-                        case "border-left-color":
-                            _declared = true;
-                            _transparent = value.Equals("transparent", StringComparison.OrdinalIgnoreCase);
-                            _color = ToHexColor(value);
-                            break;
+                        case "border-width": ApplyQuad(value, 0); break;
+                        case "border-style": ApplyQuad(value, 1); break;
+                        case "border-color": ApplyQuad(value, 2); break;
+                        case "border-top-width": _top.ApplyWidth(value); break;
+                        case "border-right-width": _right.ApplyWidth(value); break;
+                        case "border-bottom-width": _bottom.ApplyWidth(value); break;
+                        case "border-left-width": _left.ApplyWidth(value); break;
+                        case "border-top-style": _top.ApplyStyle(value); break;
+                        case "border-right-style": _right.ApplyStyle(value); break;
+                        case "border-bottom-style": _bottom.ApplyStyle(value); break;
+                        case "border-left-style": _left.ApplyStyle(value); break;
+                        case "border-top-color": _top.ApplyColor(value); break;
+                        case "border-right-color": _right.ApplyColor(value); break;
+                        case "border-bottom-color": _bottom.ApplyColor(value); break;
+                        case "border-left-color": _left.ApplyColor(value); break;
                     }
                 }
             }
 
-            private void ApplyShorthand(string value)
+            private void ApplyQuad(string value, int kind)
             {
-                _declared = true;
+                var values = SplitValues(value);
+                if (values.Count == 0)
+                    return;
+
+                ApplyValue(values[0], 0, kind);
+                if (values.Count == 1)
+                {
+                    ApplyValue(values[0], 1, kind);
+                    ApplyValue(values[0], 2, kind);
+                    ApplyValue(values[0], 3, kind);
+                }
+                else if (values.Count == 2)
+                {
+                    ApplyValue(values[1], 1, kind);
+                    ApplyValue(values[0], 2, kind);
+                    ApplyValue(values[1], 3, kind);
+                }
+                else if (values.Count == 3)
+                {
+                    ApplyValue(values[1], 1, kind);
+                    ApplyValue(values[2], 2, kind);
+                    ApplyValue(values[1], 3, kind);
+                }
+                else
+                {
+                    ApplyValue(values[1], 1, kind);
+                    ApplyValue(values[2], 2, kind);
+                    ApplyValue(values[3], 3, kind);
+                }
+            }
+
+            private void ApplyValue(string value, int side, int kind)
+            {
+                if (kind == 0)
+                    ApplyWidth(value, side);
+                else if (kind == 1)
+                    ApplyStyle(value, side);
+                else
+                    ApplyColor(value, side);
+            }
+
+            private void ApplyWidth(string value, int side)
+            {
+                switch (side)
+                {
+                    case 0: _top.ApplyWidth(value); break;
+                    case 1: _right.ApplyWidth(value); break;
+                    case 2: _bottom.ApplyWidth(value); break;
+                    default: _left.ApplyWidth(value); break;
+                }
+            }
+
+            private void ApplyStyle(string value, int side)
+            {
+                switch (side)
+                {
+                    case 0: _top.ApplyStyle(value); break;
+                    case 1: _right.ApplyStyle(value); break;
+                    case 2: _bottom.ApplyStyle(value); break;
+                    default: _left.ApplyStyle(value); break;
+                }
+            }
+
+            private void ApplyColor(string value, int side)
+            {
+                switch (side)
+                {
+                    case 0: _top.ApplyColor(value); break;
+                    case 1: _right.ApplyColor(value); break;
+                    case 2: _bottom.ApplyColor(value); break;
+                    default: _left.ApplyColor(value); break;
+                }
+            }
+
+            internal TableBorder? ToBorder()
+            {
+                if (!_top.Declared && !_right.Declared && !_bottom.Declared && !_left.Declared)
+                    return null;
+
+                return TableBorder.FromEdges(
+                    _top.ToEdge(), _right.ToEdge(), _bottom.ToEdge(), _left.ToEdge());
+            }
+        }
+
+        private struct BorderSide
+        {
+            internal bool Declared;
+            private bool _hasStyle;
+            private bool _styleVisible;
+            private bool _hasWidth;
+            private double _points;
+            private bool _transparent;
+            private string _color;
+
+            internal void ApplyShorthand(string value)
+            {
+                Declared = true;
                 _hasStyle = false;
                 _styleVisible = false;
                 _hasWidth = false;
                 _points = 0;
                 _transparent = false;
                 _color = null;
-                var tokens = value.Split(
-                    new[] { ' ', '\t', '\n', '\r' },
-                    StringSplitOptions.RemoveEmptyEntries);
 
-                foreach (var token in tokens)
+                foreach (var token in SplitTokens(value))
                 {
                     if (IsStyleKeyword(token))
                     {
-                        _styleVisible = !IsNone(token);
                         _hasStyle = true;
+                        _styleVisible = !IsNone(token);
                     }
                     else if (IsWidthKeyword(token) || IsLength(token))
                     {
@@ -403,24 +543,182 @@ namespace Calcpad.OpenXml
                         _color = ToHexColor(token);
                     }
                 }
-                // "border: solid" leaves the width at its initial value, medium.
+
                 if (_hasStyle && _styleVisible && !_hasWidth)
                     _points = 2.25;
             }
 
+            internal void ApplyWidth(string value)
+            {
+                Declared = true;
+                _hasWidth = true;
+                _points = ToPoints(value);
+            }
+
+            internal void ApplyStyle(string value)
+            {
+                Declared = true;
+                _hasStyle = true;
+                _styleVisible = !IsNone(value);
+                if (_styleVisible && !_hasWidth)
+                    _points = 2.25;
+            }
+
+            internal void ApplyColor(string value)
+            {
+                Declared = true;
+                _transparent = value.Equals("transparent", StringComparison.OrdinalIgnoreCase);
+                _color = ToHexColor(value);
+            }
+
+            internal TableBorderEdge ToEdge()
+            {
+                if (!Declared || !_hasStyle || !_styleVisible || _transparent || _points <= 0)
+                    return TableBorderEdge.None;
+
+                var border = TableBorder.FromPoints(_points, _color);
+                return new TableBorderEdge(true, border.Top.Size, border.Top.Color);
+            }
+
             private static bool IsNone(string value) =>
                 value.Trim().ToLowerInvariant() is "none" or "hidden";
+        }
 
-            internal TableBorder? ToBorder()
+        private struct ColorState
+        {
+            private string _foreground;
+            private string _background;
+
+            internal (string Foreground, string Background) Values => (_foreground, _background);
+
+            internal void Apply(string declarations)
             {
-                if (!_declared)
-                    return null;
+                if (string.IsNullOrWhiteSpace(declarations))
+                    return;
 
-                if (!_hasStyle || !_styleVisible || _transparent || _points <= 0)
-                    return TableBorder.None;
+                foreach (var prop in declarations.Split(';'))
+                {
+                    var index = prop.IndexOf(':');
+                    if (index < 0)
+                        continue;
 
-                return TableBorder.FromPoints(_points, _color);
+                    var name = prop[..index].Trim().ToLowerInvariant();
+                    var value = prop[(index + 1)..].Trim();
+                    if (name == "color")
+                        _foreground = ToHexColor(value);
+                    else if (name == "background-color")
+                        _background = ToHexColor(value);
+                    else if (name == "background")
+                    {
+                        foreach (var token in SplitTokens(value))
+                        {
+                            var color = ToHexColor(token);
+                            if (color is not null)
+                            {
+                                _background = color;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        internal struct TextStyle
+        {
+            internal string Foreground { get; set; }
+            internal string Background { get; set; }
+            internal string FontFamily { get; set; }
+            internal double FontSize { get; set; }
+            internal bool? Bold { get; set; }
+            internal bool? Italic { get; set; }
+            internal bool? Underline { get; set; }
+            internal bool? Strike { get; set; }
+            internal VerticalPositionValues? Vertical { get; set; }
+            internal JustificationValues? Alignment { get; set; }
+        }
+
+        private struct TextStyleState
+        {
+            private TextStyle _style;
+
+            internal void Apply(string declarations)
+            {
+                if (string.IsNullOrWhiteSpace(declarations))
+                    return;
+
+                foreach (var prop in declarations.Split(';'))
+                {
+                    var index = prop.IndexOf(':');
+                    if (index < 0)
+                        continue;
+
+                    var name = prop[..index].Trim().ToLowerInvariant();
+                    var value = prop[(index + 1)..].Trim();
+                    if (value.Length == 0)
+                        continue;
+
+                    switch (name)
+                    {
+                        case "color":
+                            _style.Foreground = ToHexColor(value);
+                            break;
+                        case "background-color":
+                            _style.Background = ToHexColor(value);
+                            break;
+                        case "background":
+                            foreach (var token in SplitTokens(value))
+                            {
+                                var color = ToHexColor(token);
+                                if (color is not null)
+                                {
+                                    _style.Background = color;
+                                    break;
+                                }
+                            }
+                            break;
+                        case "font-family":
+                            _style.FontFamily = SplitValues(value).FirstOrDefault()?.Trim('"', '\'', ',');
+                            break;
+                        case "font-size":
+                            _style.FontSize = ToPoints(value);
+                            break;
+                        case "font-weight":
+                            _style.Bold = value.Equals("bold", StringComparison.OrdinalIgnoreCase) ||
+                                          value.Equals("bolder", StringComparison.OrdinalIgnoreCase) ||
+                                          int.TryParse(value, out var weight) && weight >= 600;
+                            break;
+                        case "font-style":
+                            _style.Italic = value.Equals("italic", StringComparison.OrdinalIgnoreCase) ||
+                                            value.Equals("oblique", StringComparison.OrdinalIgnoreCase);
+                            break;
+                        case "text-decoration":
+                            _style.Underline = value.Contains("underline", StringComparison.OrdinalIgnoreCase);
+                            _style.Strike = value.Contains("line-through", StringComparison.OrdinalIgnoreCase);
+                            break;
+                        case "text-align":
+                            _style.Alignment = value.ToLowerInvariant() switch
+                            {
+                                "left" or "start" => JustificationValues.Left,
+                                "right" or "end" => JustificationValues.Right,
+                                "center" => JustificationValues.Center,
+                                "justify" => JustificationValues.Both,
+                                _ => null
+                            };
+                            break;
+                        case "vertical-align":
+                            _style.Vertical = value.ToLowerInvariant() switch
+                            {
+                                "super" => VerticalPositionValues.Superscript,
+                                "sub" => VerticalPositionValues.Subscript,
+                                _ => null
+                            };
+                            break;
+                    }
+                }
+            }
+
+            internal TextStyle ToStyle() => _style;
         }
 
         private readonly struct CssRule

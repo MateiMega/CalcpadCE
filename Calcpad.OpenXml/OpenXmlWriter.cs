@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
+using System.Globalization;
 using M = DocumentFormat.OpenXml.Math;
 
 namespace Calcpad.OpenXml
@@ -20,6 +21,10 @@ namespace Calcpad.OpenXml
         private readonly Queue<OpenXmlElement> _buffer = new();
         private readonly TableBuilder _tableBuilder = new();
         private CssStyleSheet _styles = CssStyleSheet.Empty;
+        private string _headShading;
+        private string _bodyShading;
+        private JustificationValues? _headAlignment;
+        private JustificationValues? _bodyAlignment;
         private TableBorder _headBorder = TableBorder.DefaultHead;
         private TableBorder _bodyBorder = TableBorder.DefaultBody;
         private string _url = string.Empty;
@@ -35,6 +40,14 @@ namespace Calcpad.OpenXml
         public string Convert(string html, string path)
         {
             using var doc = WordprocessingDocument.Create(path, WordprocessingDocumentType.Document);
+            WriteDocument(html, doc);
+            return Validate(doc);
+        }
+
+        public string Convert(string html, string path, string url)
+        {
+            using var doc = WordprocessingDocument.Create(path, WordprocessingDocumentType.Document);
+            _url = url;
             WriteDocument(html, doc);
             return Validate(doc);
         }
@@ -205,6 +218,9 @@ namespace Calcpad.OpenXml
                 if (isList)
                     _listLevels.Pop();
 
+                if (parentElement is Paragraph paragraph)
+                    ApplyParagraphRunStyle(paragraph, domNode);
+
                 if (parentElement is Run)
                 {
                     var i = 0;
@@ -287,7 +303,8 @@ namespace Calcpad.OpenXml
                 }
                 else if (parentElement is Body || parentElement is CustomXmlBlock)
                     parentElement.AppendChild(new Paragraph(new Run(childElement.CloneNode(false))));
-                else if (parentElement is Paragraph p && p.ParagraphProperties?.Shading is not null)
+                else if (parentElement is Paragraph p &&
+                         !string.IsNullOrEmpty(p.ParagraphProperties?.Shading?.Color))
                 {
                     parentElement.AppendChild(new Run(childElement.CloneNode(false))
                     {
@@ -308,8 +325,11 @@ namespace Calcpad.OpenXml
             {
                 if (parentElement is Paragraph p)
                 {
-                    if (p.ParagraphProperties?.Shading is not null && childElement is Run r)
-                        r.RunProperties ??= new RunProperties(MakeColor(p.ParagraphProperties.Shading.Color));
+                    if (!string.IsNullOrEmpty(p.ParagraphProperties?.Shading?.Color) && childElement is Run r)
+                    {
+                        r.RunProperties ??= new RunProperties();
+                        r.RunProperties.Color ??= MakeColor(p.ParagraphProperties.Shading.Color);
+                    }
                     parentElement.AppendChild(childElement);
                 }
                 else if (parentElement is Run)
@@ -413,12 +433,21 @@ namespace Calcpad.OpenXml
                     if (domNode.HasClass("matrix"))
                         return null;
 
-                    var (isBordered, headBorder, bodyBorder) = _styles.GetTableBorders(domNode);
+                    var (isBordered, tableBorder, headBorder, bodyBorder, headShading, bodyShading) = _styles.GetTableBorders(domNode);
                     _tableBuilder.IsBorderedTable = isBordered;
+                    _tableBuilder.OuterBorder = tableBorder;
                     _tableBuilder.HeadBorder = headBorder;
                     _tableBuilder.BodyBorder = bodyBorder;
+                    _tableBuilder.HeadShading = headShading;
+                    _tableBuilder.BodyShading = bodyShading;
+                    _headAlignment = _styles.GetTextStyle(domNode.SelectSingleNode(".//th")).Alignment;
+                    _bodyAlignment = _styles.GetTextStyle(domNode.SelectSingleNode(".//td")).Alignment;
+                    _tableBuilder.HeadAlignment = _headAlignment;
+                    _tableBuilder.BodyAlignment = _bodyAlignment;
                     _headBorder = headBorder;
                     _bodyBorder = bodyBorder;
+                    _headShading = headShading;
+                    _bodyShading = bodyShading;
                     return _tableBuilder.AddTable();
                 case "tr":
                     return _tableBuilder.AddTableRow();
@@ -429,7 +458,9 @@ namespace Calcpad.OpenXml
                     var rowSpan = domNode.GetAttributeValue("rowspan", 1);
                     // A cell may be bordered on its own, independently of the table.
                     var border = _styles.GetBorder(domNode) ?? (isHead ? _headBorder : _bodyBorder);
-                    return _tableBuilder.AddTableCell(isHead, colSpan, rowSpan, border);
+                    var shading = _styles.GetBackground(domNode) ?? (isHead ? _headShading : _bodyShading);
+                    var alignment = _styles.GetTextStyle(domNode).Alignment ?? (isHead ? _headAlignment : _bodyAlignment);
+                    return _tableBuilder.AddTableCell(isHead, colSpan, rowSpan, border, shading, alignment);
                 case "li":
                     return AddListItem();
                 case "p":
@@ -556,7 +587,9 @@ namespace Calcpad.OpenXml
                     MakeColor(CssColor.OkFg),
                     MakeShading(CssColor.OkBg)
                     ));
-            return new Run();
+            var run = new Run { RunProperties = new RunProperties() };
+            ApplyRunStyle(run.RunProperties, _styles.GetTextStyle(domNode), true);
+            return run;
         }
 
         private static OpenXmlElement AddHr(HtmlNode domNode)
@@ -676,12 +709,7 @@ namespace Calcpad.OpenXml
             }
             else
             {
-                GetColors(domNode, out var foreground, out var background);
-                if (!string.IsNullOrEmpty(foreground))
-                    rp.Color = MakeColor(foreground);
-
-                if (!string.IsNullOrEmpty(background))
-                    rp.Shading = MakeShading(background);
+                ApplyRunStyle(rp, _styles.GetTextStyle(domNode), false);
             }
             return r;
         }
@@ -796,7 +824,7 @@ namespace Calcpad.OpenXml
             };
         }
 
-        private static Paragraph AddParagraph(HtmlNode domNode)
+        private Paragraph AddParagraph(HtmlNode domNode)
         {
             var styleName = domNode.Name.ToLowerInvariant();
             var p = new Paragraph();
@@ -846,25 +874,7 @@ namespace Calcpad.OpenXml
             }
             else
             {
-                GetColors(domNode, out var foreground, out var background);
-                if (!string.IsNullOrEmpty(foreground) || !string.IsNullOrEmpty(background))
-                {
-                    if (styleName == "p")
-                        p.ParagraphProperties = new ParagraphProperties();
-
-
-                    Shading shading = new()
-                    {
-                        Val = ShadingPatternValues.Clear
-                    };
-                    if (!string.IsNullOrEmpty(foreground))
-                        shading.Color = foreground;
-
-                    if (!string.IsNullOrEmpty(background))
-                        shading.Fill = background;
-
-                    p.ParagraphProperties.Shading = shading;
-                }
+                ApplyParagraphStyle(p, _styles.GetTextStyle(domNode));
             }
             return p;
         }
@@ -892,62 +902,69 @@ namespace Calcpad.OpenXml
                 Val = ShadingPatternValues.Clear
             };
 
+        private void ApplyParagraphRunStyle(Paragraph paragraph, HtmlNode node)
+        {
+            var style = _styles.GetTextStyle(node);
+            foreach (var run in paragraph.Descendants<Run>())
+            {
+                run.RunProperties ??= new RunProperties();
+                ApplyRunStyle(run.RunProperties, style, false);
+            }
+        }
+
+        private static void ApplyParagraphStyle(Paragraph paragraph, CssStyleSheet.TextStyle style)
+        {
+            if (style.Alignment.HasValue)
+            {
+                paragraph.ParagraphProperties ??= new ParagraphProperties();
+                paragraph.ParagraphProperties.Justification = new Justification
+                {
+                    Val = style.Alignment.Value
+                };
+            }
+
+            if (!string.IsNullOrEmpty(style.Foreground) || !string.IsNullOrEmpty(style.Background))
+            {
+                paragraph.ParagraphProperties ??= new ParagraphProperties();
+                var shading = paragraph.ParagraphProperties.Shading ?? new Shading
+                {
+                    Val = ShadingPatternValues.Clear
+                };
+                if (!string.IsNullOrEmpty(style.Foreground))
+                    shading.Color = style.Foreground;
+                if (!string.IsNullOrEmpty(style.Background))
+                    shading.Fill = style.Background;
+                paragraph.ParagraphProperties.Shading = shading;
+            }
+        }
+
+        private static void ApplyRunStyle(RunProperties properties, CssStyleSheet.TextStyle style, bool overwrite)
+        {
+            if (!string.IsNullOrEmpty(style.Foreground) && (overwrite || properties.Color is null))
+                properties.Color = MakeColor(style.Foreground);
+            if (!string.IsNullOrEmpty(style.Background) && (overwrite || properties.Shading is null))
+                properties.Shading = MakeShading(style.Background);
+            if (!string.IsNullOrEmpty(style.FontFamily) && (overwrite || properties.RunFonts is null))
+                properties.RunFonts = new RunFonts { Ascii = style.FontFamily, HighAnsi = style.FontFamily };
+            if (style.FontSize > 0 && (overwrite || properties.FontSize is null))
+                properties.FontSize = new FontSize { Val = ((int)Math.Round(style.FontSize * 2)).ToString(CultureInfo.InvariantCulture) };
+            if (style.Bold.HasValue && (overwrite || properties.Bold is null))
+                properties.Bold = new Bold { Val = OnOffValue.FromBoolean(style.Bold.Value) };
+            if (style.Italic.HasValue && (overwrite || properties.Italic is null))
+                properties.Italic = new Italic { Val = OnOffValue.FromBoolean(style.Italic.Value) };
+            if (style.Underline.HasValue && (overwrite || properties.Underline is null))
+                properties.Underline = new Underline { Val = style.Underline.Value ? UnderlineValues.Single : UnderlineValues.None };
+            if (style.Strike.HasValue && (overwrite || properties.Strike is null))
+                properties.Strike = new Strike { Val = OnOffValue.FromBoolean(style.Strike.Value) };
+            if (style.Vertical.HasValue && (overwrite || properties.VerticalTextAlignment is null))
+                properties.VerticalTextAlignment = new VerticalTextAlignment { Val = style.Vertical.Value };
+        }
+
         private static Color MakeColor(string color) =>
             new()
             {
                 Val = color,
             };
-
-        private static void GetColors(HtmlNode domNode, out string foreground, out string background)
-        {
-            var attributes = domNode.Attributes;
-            foreground = string.Empty;
-            background = string.Empty;
-            foreach (var attr in attributes)
-            {
-                if (string.Equals(attr.Name, "style", StringComparison.OrdinalIgnoreCase))
-                {
-                    SplitEnumerator props = new(attr.Value, ';');
-                    foreach (var prop in props)
-                    {
-                        if (!prop.IsEmpty || prop.IsWhiteSpace())
-                        {
-                            var index = prop.IndexOf(':');
-                            if (index > -1)
-                            {
-                                var name = prop[..index].Trim().ToString();
-                                if (string.Equals(name, "color", StringComparison.OrdinalIgnoreCase))
-                                    foreground = CssToOpenXmlColor(prop[(index + 1)..].Trim().ToString());
-                                else if (string.Equals(name, "background-color", StringComparison.OrdinalIgnoreCase))
-                                    background = CssToOpenXmlColor(prop[(index + 1)..].Trim().ToString());
-                                else if (string.Equals(name, "background", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    var s = prop[(index + 1)..].Trim();
-                                    var spaceIndex = s.StartsWith("rgb", StringComparison.OrdinalIgnoreCase) ?
-                                        s.IndexOf(')') + 1 :
-                                        s.IndexOf(' ');
-                                    if (spaceIndex > 0)
-                                        s = s[..spaceIndex];
-
-                                    background = CssToOpenXmlColor(s.ToString());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private static string CssToOpenXmlColor(string color)
-        {
-            if (color.StartsWith('#'))
-                return color[1..];
-
-            if (color.StartsWith("rgb", StringComparison.Ordinal))
-                return CssColor.RgbToHex(color);
-
-            return CssColor.NameToHex(color);
-        }
 
         private static void CloneSvgUses(HtmlNode domNode)
         {

@@ -90,11 +90,13 @@ namespace Calcpad.OpenXml
         {
             var match = Regex.Match(
                 svg,
-                $@"\b{attribute}\s*=\s*['""]\s*([0-9]+(?:\.[0-9]+)?)",
+                $@"\b{attribute}\s*=\s*['""]\s*([0-9]+(?:\.[0-9]+)?)([a-z%]*)",
                 RegexOptions.IgnoreCase);
-            return match.Success && double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
-                ? value
-                : 0;
+            if (!match.Success || !double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+                return 0;
+
+            var unit = match.Groups[2].Value;
+            return unit is "" or "%" ? value : CssParser.ParseSize(value + unit);
         }
     }
 

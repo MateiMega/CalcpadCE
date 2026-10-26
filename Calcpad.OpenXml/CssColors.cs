@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace Calcpad.OpenXml
 {
@@ -11,12 +12,30 @@ namespace Calcpad.OpenXml
 
         internal static string RgbToHex(string rgbString)
         {
-            SplitEnumerator colors = new(rgbString.AsSpan(4, rgbString.Length - 5), ',');
-            Span<byte> bytes = stackalloc byte[3];
-            int i = 0;
-            foreach (var color in colors)
-                bytes[i++] = byte.Parse(color.Trim());
+            var open = rgbString.IndexOf('(');
+            var close = rgbString.LastIndexOf(')');
+            if (open < 0 || close <= open)
+                return null;
 
+            var values = rgbString[(open + 1)..close].Split(',');
+            if (values.Length < 3)
+                return null;
+
+            Span<byte> bytes = stackalloc byte[3];
+            for (var i = 0; i < 3; ++i)
+            {
+                var value = values[i].Trim();
+                var percent = value.EndsWith('%');
+                if (percent)
+                    value = value[..^1];
+
+                if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+                    return null;
+                if (percent)
+                    number = number * 255.0 / 100.0;
+
+                bytes[i] = (byte)Math.Clamp(Math.Round(number), 0, 255);
+            }
             return Convert.ToHexString(bytes);
         }
 

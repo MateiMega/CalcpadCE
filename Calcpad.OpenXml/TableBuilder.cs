@@ -22,8 +22,13 @@ namespace Calcpad.OpenXml
         }
 
         public bool IsBorderedTable;
+        public TableBorder OuterBorder = TableBorder.None;
         public TableBorder HeadBorder = TableBorder.DefaultHead;
         public TableBorder BodyBorder = TableBorder.DefaultBody;
+        public string HeadShading;
+        public string BodyShading;
+        public JustificationValues? HeadAlignment;
+        public JustificationValues? BodyAlignment;
         private List<CellData> _currentRowSpan = [];
         private List<CellData> _prevRowSpan = [];
         private TableRow _currentRow;
@@ -34,7 +39,18 @@ namespace Calcpad.OpenXml
             _prevRowSpan.Clear();
             _currentRow = null;
             var table = new Table();
-            table.AppendChild(new TableProperties(new TableStyle() { Val = IsBorderedTable ? "bcpd" : "cpd" }));
+            var properties = new TableProperties(new TableStyle() { Val = IsBorderedTable ? "bcpd" : "cpd" });
+            if (OuterBorder.IsVisible)
+            {
+                properties.TableBorders = new TableBorders
+                {
+                    TopBorder = CreateBorder<TopBorder>(OuterBorder.Top),
+                    RightBorder = CreateBorder<RightBorder>(OuterBorder.Right),
+                    BottomBorder = CreateBorder<BottomBorder>(OuterBorder.Bottom),
+                    LeftBorder = CreateBorder<LeftBorder>(OuterBorder.Left)
+                };
+            }
+            table.AppendChild(properties);
             table.AppendChild(new TableGrid());
             return table;
         }
@@ -47,10 +63,16 @@ namespace Calcpad.OpenXml
             return _currentRow;
         }
 
-        public TableCell AddTableCell(bool isHead, int colSpan, int rowSpan, TableBorder border)
+        public TableCell AddTableCell(
+            bool isHead,
+            int colSpan,
+            int rowSpan,
+            TableBorder border,
+            string shading = null,
+            JustificationValues? alignment = null)
         {
             AddMergedCells();
-            var tc = CreateTableCell(isHead, border);
+            var tc = CreateTableCell(isHead, border, shading, alignment);
             var tcp = tc.TableCellProperties;
             var n = colSpan == 0 ? 1 : colSpan;
             for (int i = 0; i < n; ++i)
@@ -74,28 +96,42 @@ namespace Calcpad.OpenXml
             return tc;
         }
 
-        private TableCell CreateTableCell(bool isHead, TableBorder border)
+        private TableCell CreateTableCell(
+            bool isHead,
+            TableBorder border,
+            string shading = null,
+            JustificationValues? alignment = null)
         {
             var tc = new TableCell();
             var tcp = new TableCellProperties();
             tc.TableCellProperties = tcp;
-            if (!border.IsVisible)
-                return tc;
-
-            tcp.TableCellBorders = new TableCellBorders()
+            if (border.IsVisible)
             {
-                LeftBorder = CreateBorder<LeftBorder>(border.Left),
-                RightBorder = CreateBorder<RightBorder>(border.Right),
-                TopBorder = CreateBorder<TopBorder>(border.Top),
-                BottomBorder = CreateBorder<BottomBorder>(border.Bottom),
-            };
-            if (isHead)
+                tcp.TableCellBorders = new TableCellBorders()
+                {
+                    LeftBorder = CreateBorder<LeftBorder>(border.Left),
+                    RightBorder = CreateBorder<RightBorder>(border.Right),
+                    TopBorder = CreateBorder<TopBorder>(border.Top),
+                    BottomBorder = CreateBorder<BottomBorder>(border.Bottom),
+                };
+            }
+            if (!string.IsNullOrEmpty(shading))
             {
                 tcp.Shading = new Shading()
                 {
-                    Fill = "F0F0F0",
+                    Fill = shading,
                     Val = ShadingPatternValues.Clear
                 };
+            }
+            if (alignment.HasValue)
+            {
+                tc.AppendChild(new Paragraph
+                {
+                    ParagraphProperties = new ParagraphProperties
+                    {
+                        Justification = new Justification { Val = alignment.Value }
+                    }
+                });
             }
             return tc;
 
@@ -122,7 +158,11 @@ namespace Calcpad.OpenXml
                     break;
 
                 _currentRowSpan.Add(cellData);
-                var tc = CreateTableCell(cellData.IsHead, cellData.IsHead ? HeadBorder : BodyBorder);
+                var tc = CreateTableCell(
+                    cellData.IsHead,
+                    cellData.IsHead ? HeadBorder : BodyBorder,
+                    cellData.IsHead ? HeadShading : BodyShading,
+                    cellData.IsHead ? HeadAlignment : BodyAlignment);
                 tc.TableCellProperties.VerticalMerge = new VerticalMerge()
                 {
                     Val = MergedCellValues.Continue
@@ -130,5 +170,16 @@ namespace Calcpad.OpenXml
                 _currentRow.AppendChild(tc);
             }
         }
+
+        private static T CreateBorder<T>(TableBorderEdge edge) where T : BorderType, new() =>
+            edge.IsVisible
+                ? new T
+                {
+                    Val = BorderValues.Single,
+                    Size = edge.Size,
+                    Space = 0u,
+                    Color = edge.Color
+                }
+                : null;
     }
 }
